@@ -73,22 +73,23 @@ public class ConnectivityCommitValidator : ICommitValidator
         var (dx, dy) = StepHelper.GetOffset(dir);
         var nextX = point.X + dx;
         var nextY = point.Y + dy;
-        var candidate = new Point(nextX, nextY);
 
-        if (candidate == blockedPoint)
+        if (!board.Contains(nextY, nextX))
         {
             nextPoint = default;
             return false;
         }
 
-        if (board.Contains(nextY, nextX) && board[nextY, nextX] == 0 && !IsMarked(candidate))
+        var candidate = new Point(nextX, nextY);
+
+        if (candidate == blockedPoint || board[nextY, nextX] != 0 || IsMarked(candidate))
         {
-            nextPoint = candidate;
-            return true;
+            nextPoint = default;
+            return false;
         }
 
-        nextPoint = default;
-        return false;
+        nextPoint = candidate;
+        return true;
     }
 
     private static bool TryGetAnyAvailableNeighbour(Board board, PathState state, out Point neighbour)
