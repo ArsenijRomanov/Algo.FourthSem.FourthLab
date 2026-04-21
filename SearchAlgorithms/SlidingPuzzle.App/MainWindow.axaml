@@ -1,0 +1,82 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="SlidingPuzzle.App.MainWindow"
+        x:CompileBindings="False"
+        Width="1300" Height="820"
+        KeyDown="OnKeyDown"
+        Title="Sliding Puzzle Lab"
+        mc:Ignorable="d">
+  <Grid ColumnDefinitions="330,*" Margin="14" RowDefinitions="*,Auto">
+    <ScrollViewer Grid.Column="0">
+      <StackPanel Spacing="12">
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Настройки" FontSize="18" FontWeight="Bold"/>
+            <ComboBox ItemsSource="{Binding Algorithms}" SelectedItem="{Binding SelectedAlgorithm}"/>
+            <Button Content="Случайная раскладка" Command="{Binding ShuffleCommand}"/>
+            <Button Content="Решить" Command="{Binding SolveCommand}"/>
+            <Button Content="Undo" Command="{Binding UndoCommand}"/>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Управление" FontSize="18" FontWeight="Bold"/>
+            <TextBlock Text="Стрелки или кнопки двигают пустую клетку" Foreground="{StaticResource MutedTextBrush}"/>
+            <UniformGrid Rows="2" Columns="3" Margin="0,6,0,0">
+              <Border/>
+              <Button Content="↑" Command="{Binding MoveUpCommand}"/>
+              <Border/>
+              <Button Content="←" Command="{Binding MoveLeftCommand}"/>
+              <Button Content="↓" Command="{Binding MoveDownCommand}"/>
+              <Button Content="→" Command="{Binding MoveRightCommand}"/>
+            </UniformGrid>
+            <TextBlock Text="{Binding RouteStatus}"/>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Плеер решения" FontSize="18" FontWeight="Bold"/>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button Content="◀" Command="{Binding PrevStepCommand}" IsEnabled="{Binding CanUseSolutionControls}"/>
+              <Button Content="▶" Command="{Binding NextStepCommand}" IsEnabled="{Binding CanUseSolutionControls}"/>
+            </StackPanel>
+            <TextBlock Text="{Binding SolveInfo}" Foreground="{StaticResource MutedTextBrush}"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Column="1" Classes="card" Padding="20">
+      <ItemsControl ItemsSource="{Binding Tiles}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Rows="4" Columns="4"/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Button Margin="5"
+                    Height="90"
+                    FontSize="28"
+                    FontWeight="Bold"
+                    Background="{Binding Background}"
+                    Content="{Binding Label}"
+                    Command="{Binding DataContext.TileClickCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}"/>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+
+    <Border Grid.ColumnSpan="2" Grid.Row="1" Classes="card" Margin="0,10,0,0">
+      <StackPanel>
+        <TextBlock Text="Ходы решения" FontWeight="Bold"/>
+        <TextBlock Text="{Binding MovesPreview}" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

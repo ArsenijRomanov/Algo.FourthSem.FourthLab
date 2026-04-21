@@ -8,6 +8,9 @@ namespace HamiltonianPath.Core.Strategies;
 
 public class ConnectivityCommitValidator : ICommitValidator
 {
+    private int[,]? _visitStamp;
+    private int _currentStamp;
+
     public bool Validate(SearchContext context, PathState state)
     {
         var board = context.Board;
@@ -21,45 +24,32 @@ public class ConnectivityCommitValidator : ICommitValidator
 
         if (!TryGetAnyAvailableDirection(state, out var firstDir))
             return true;
+        
+        EnsureStampBuffer(board.Height, board.Width);
+        StartNewStamp();
+        
+        var firstNeighbour = GetNeighbourUnchecked(board, state.Point, firstDir);
+        MarkConnectedComponent(board, firstNeighbour, state.Point);
 
-        var marked = new List<Point>();
-
-        board.SetVisited(state.Point);
-
-        try
+        foreach (var dir in StepHelper.All)
         {
-            var firstNeighbour = GetNeighbourUnchecked(board, state.Point, firstDir);
+            if (!state.CanMove(dir))
+                continue;
 
-            MarkConnectedComponent(board, firstNeighbour, marked);
+            var neighbour = GetNeighbourUnchecked(board, state.Point, dir);
 
-            foreach (var dir in StepHelper.All)
-            {
-                if (!state.CanMove(dir))
-                    continue;
-
-                var neighbour = GetNeighbourUnchecked(board, state.Point, dir);
-
-                if (board[neighbour] != -1)
-                    return false;
-            }
-
-            return true;
+            if (!IsMarked(neighbour))
+                return false;
         }
-        finally
-        {
-            foreach (var point in marked)
-                board.Unmark(point);
 
-            board.Unmark(state.Point);
-        }
+        return true;
     }
 
-    private static void MarkConnectedComponent(Board board, Point start, List<Point> marked)
+    private void MarkConnectedComponent(Board board, Point start, Point blockedPoint)
     {
         var queue = new Queue<Point>();
 
-        board.Mark(start, -1);
-        marked.Add(start);
+        Mark(start);
         queue.Enqueue(start);
 
         while (queue.Count > 0)
@@ -68,25 +58,36 @@ public class ConnectivityCommitValidator : ICommitValidator
 
             foreach (var dir in StepHelper.All)
             {
-                if (!TryGetFreeNeighbour(board, current, dir, out var next))
+                if (!TryGetFreeNeighbour(board, current, blockedPoint, dir, out var next))
                     continue;
 
-                board.Mark(next, -1);
-                marked.Add(next);
+                Mark(next);
                 queue.Enqueue(next);
             }
         }
     }
 
-    private static bool TryGetFreeNeighbour(Board board, Point point, DirectionFlag dir, out Point nextPoint)
+    private bool TryGetFreeNeighbour(
+        Board board,
+        Point point,
+        Point blockedPoint,
+        DirectionFlag dir,
+        out Point nextPoint)
     {
         var (dx, dy) = StepHelper.GetOffset(dir);
         var nextX = point.X + dx;
         var nextY = point.Y + dy;
+        var candidate = new Point(nextX, nextY);
 
-        if (board.Contains(nextY, nextX) && board[nextY, nextX] == 0)
+        if (candidate == blockedPoint)
         {
-            nextPoint = new Point(nextX, nextY);
+            nextPoint = default;
+            return false;
+        }
+
+        if (board.Contains(nextY, nextX) && board[nextY, nextX] == 0 && !IsMarked(candidate))
+        {
+            nextPoint = candidate;
             return true;
         }
 
@@ -119,4 +120,32 @@ public class ConnectivityCommitValidator : ICommitValidator
         dir = DirectionFlag.None;
         return false;
     }
+
+    private void EnsureStampBuffer(int height, int width)
+    {
+        if (_visitStamp is not null &&
+            _visitStamp.GetLength(0) == height &&
+            _visitStamp.GetLength(1) == width)
+            return;
+
+        _visitStamp = new int[height, width];
+        _currentStamp = 0;
+    }
+
+    private void StartNewStamp()
+    {
+        _currentStamp++;
+
+        if (_visitStamp is null || _currentStamp != int.MaxValue)
+            return;
+
+        Array.Clear(_visitStamp);
+        _currentStamp = 1;
+    }
+
+    private void Mark(Point point)
+        => _visitStamp![point.Y, point.X] = _currentStamp;
+
+    private bool IsMarked(Point point)
+        => _visitStamp![point.Y, point.X] == _currentStamp;
 }
