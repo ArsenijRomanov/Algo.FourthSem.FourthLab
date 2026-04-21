@@ -111,3 +111,5 @@ out/
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .obsidian/plugins/*/data.json
+
+all_code_dump.txt
