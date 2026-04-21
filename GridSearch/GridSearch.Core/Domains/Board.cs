@@ -7,10 +7,9 @@ public class Board
     private readonly int[,] _matrix;
     public int Height { get; }
     public int Width { get; }
-    
     public Point Start { get; }
-    
     public Point Finish { get; }
+    public int FreePlacesCount { get; private set; }
 
     public Board(int[,] matrix, Point start, Point finish)
     {
@@ -21,6 +20,7 @@ public class Board
         _matrix = matrix;
         Start = start;
         Finish = finish;
+        FreePlacesCount = Height * Width;
     }
 
     public int this[int y, int x]
@@ -39,8 +39,16 @@ public class Board
     public void Unmark(Point point) => this[point] = 0;
 
     public void SetVisited(Point point) => this[point] = 1;
+    
+    public void SetWall(Point point)
+    {
+        this[point] = -100;
+        --FreePlacesCount;
+    }
 
     public bool IsVisited(Point point) => this[point] == 1;
+    
+    public bool IsFree(Point point) => this[point] == 0;
 
     public bool Contains(Point point)
         => point.X >= 0 && point.X < Width && 

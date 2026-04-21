@@ -10,7 +10,7 @@ public class ConnectivityCommitValidator : ICommitValidator
     public bool Validate(SearchContext context, PathState state)
     {
         var board = context.Board;
-        var isLastStep = context.PathLength == board.Height * board.Width - 1;
+        var isLastStep = context.PathLength == context.Board.FreePlacesCount - 1;
 
         if (state.Point == board.Finish != isLastStep)
             return false;

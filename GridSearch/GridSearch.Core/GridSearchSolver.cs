@@ -16,7 +16,6 @@ public class GridSearchSolver(
     public bool Solve(Board board)
     {
         ArgumentNullException.ThrowIfNull(board);
-        if (!CanHaveHamiltonianPath(board)) return false;
 
         var stack = new Stack<PathState>();
         var startState = new PathState(board.Start, board.CalculateDirsMask(board.Start));
@@ -59,12 +58,22 @@ public class GridSearchSolver(
     
     public static bool CanHaveHamiltonianPath(Board board)
     {
-        if (board.Start == board.Finish && board.Height == 1 && board.Width == 1) return true;
-        if (board.Start == board.Finish) return false;
-        if (board.Height == 1 && int.Abs(board.Start.X - board.Finish.X) != board.Width - 1) return false;
-        if (board.Width == 1 && int.Abs(board.Start.Y - board.Finish.Y) != board.Height - 1) return false;
+        if (board.FreePlacesCount == 0)
+            return false;
+
+        if (board[board.Start] != 0 || board[board.Finish] != 0)
+            return false;
+
+        if (board.FreePlacesCount == 1)
+            return board.Start == board.Finish;
+
+        if (board.Start == board.Finish)
+            return false;
         
-        var evenPlaces = board.Height * board.Width % 2 == 0;
+        if (board.Height == 1 && int.Abs(board.Start.X - board.Finish.X) != board.FreePlacesCount - 1) return false;
+        if (board.Width == 1 && int.Abs(board.Start.Y - board.Finish.Y) != board.FreePlacesCount - 1) return false;
+        
+        var evenPlaces = board.FreePlacesCount % 2 == 0;
         var evenManhattanDistance = (board.Start.X - board.Finish.X + board.Start.Y - board.Finish.Y) % 2 == 0;
 
         return evenPlaces ^ evenManhattanDistance;
