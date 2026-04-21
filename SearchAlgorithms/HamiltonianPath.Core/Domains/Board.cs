@@ -1,3 +1,4 @@
+using HamiltonianPath.Core.Enums;
 using HamiltonianPath.Core.Helpers;
 
 namespace HamiltonianPath.Core.Domains;
@@ -104,12 +105,12 @@ public class Board
     public bool Contains(int y, int x)
         => x < Width && x >= 0 && y < Height && y >= 0;
 
-    public bool TryStep(Point point, Direction dir, out Point nextPoint)
+    public bool TryStep(Point point, DirectionFlag dir, out Point nextPoint)
     {
-        if (dir == Direction.None)
+        if (dir == DirectionFlag.None)
             throw new ArgumentException(null, nameof(dir));
         
-        var (dx, dy) = DirectionHelper.GetOffset(dir);
+        var (dx, dy) = StepHelper.GetOffset(dir);
         var nextX = point.X + dx;
         var nextY = point.Y + dy;
 
@@ -123,12 +124,12 @@ public class Board
         return false;
     }
 
-    public Point Step(Point point, Direction dir)
+    public Point Step(Point point, DirectionFlag dir)
     {
-        if (dir == Direction.None)
+        if (dir == DirectionFlag.None)
             throw new ArgumentException(null, nameof(dir));
 
-        var (dx, dy) = DirectionHelper.GetOffset(dir);
+        var (dx, dy) = StepHelper.GetOffset(dir);
         var nextX = point.X + dx;
         var nextY = point.Y + dy;
 
@@ -137,21 +138,21 @@ public class Board
             : throw new ArgumentException(null, nameof(point));
     }
 
-    public Direction CalculateDirsMask(Point point)
+    public DirectionFlag CalculateDirsMask(Point point)
     {
-        var mask = Direction.None;
+        var mask = DirectionFlag.None;
 
-        if (TryStep(point, Direction.Left, out _))
-            mask |= Direction.Left;
+        if (TryStep(point, DirectionFlag.Left, out _))
+            mask |= DirectionFlag.Left;
 
-        if (TryStep(point, Direction.Down, out _))
-            mask |= Direction.Down;
+        if (TryStep(point, DirectionFlag.Down, out _))
+            mask |= DirectionFlag.Down;
 
-        if (TryStep(point, Direction.Right, out _))
-            mask |= Direction.Right;
+        if (TryStep(point, DirectionFlag.Right, out _))
+            mask |= DirectionFlag.Right;
 
-        if (TryStep(point, Direction.Up, out _))
-            mask |= Direction.Up;
+        if (TryStep(point, DirectionFlag.Up, out _))
+            mask |= DirectionFlag.Up;
 
         return mask;
     }

@@ -1,25 +1,26 @@
 using HamiltonianPath.Core.Domains;
+using HamiltonianPath.Core.Enums;
 
 namespace HamiltonianPath.Core.Helpers;
 
-public static class DirectionHelper
+public static class StepHelper
 {
-    public static ReadOnlySpan<Direction> All =>
+    public static ReadOnlySpan<DirectionFlag> All =>
     [
-        Direction.Left,
-        Direction.Down,
-        Direction.Right,
-        Direction.Up
+        DirectionFlag.Left,
+        DirectionFlag.Down,
+        DirectionFlag.Right,
+        DirectionFlag.Up
     ];
     
-    public static (int dX, int dY) GetOffset(Direction dir)
+    public static (int dX, int dY) GetOffset(DirectionFlag dir)
     {
         return dir switch
         {
-            Direction.Right => (1, 0),
-            Direction.Down  => (0, 1),
-            Direction.Left  => (-1, 0),
-            Direction.Up    => (0, -1),
+            DirectionFlag.Right => (1, 0),
+            DirectionFlag.Down  => (0, 1),
+            DirectionFlag.Left  => (-1, 0),
+            DirectionFlag.Up    => (0, -1),
             _ => (0, 0)
         };
     }

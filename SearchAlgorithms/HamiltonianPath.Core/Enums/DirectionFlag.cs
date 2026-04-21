@@ -1,7 +1,7 @@
-namespace HamiltonianPath.Core.Domains;
+namespace HamiltonianPath.Core.Enums;
 
 [Flags]
-public enum Direction: byte
+public enum DirectionFlag: byte
 {
     None = 0,
     Right = 1,

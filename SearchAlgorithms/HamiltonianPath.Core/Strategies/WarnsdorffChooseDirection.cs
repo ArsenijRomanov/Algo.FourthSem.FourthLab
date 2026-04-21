@@ -1,19 +1,20 @@
 using HamiltonianPath.Core.Abstractions;
 using HamiltonianPath.Core.Domains;
+using HamiltonianPath.Core.Enums;
 using HamiltonianPath.Core.Helpers;
 
 namespace HamiltonianPath.Core.Strategies;
 
 public class WarnsdorffChooseDirection : IChooseDirection
 {
-    public (PathState nextState, Direction chosenDir) GetNextPathState(Board board, PathState pathState)
+    public (PathState nextState, DirectionFlag chosenDir) GetNextPathState(Board board, PathState pathState)
     {
         var best = default(PathState);
-        var bestDir = default(Direction);
+        var bestDir = default(DirectionFlag);
         var bestFreedom = byte.MaxValue;
         var hasBest = false;
 
-        foreach (var dir in DirectionHelper.All)
+        foreach (var dir in StepHelper.All)
         {
             if (!pathState.CanMove(dir) || !board.TryStep(pathState.Point, dir, out var nextPoint))
                 continue;

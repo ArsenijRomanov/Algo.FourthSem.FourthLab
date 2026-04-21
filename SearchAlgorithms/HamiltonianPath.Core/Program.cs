@@ -1,8 +1,9 @@
 ﻿
 using HamiltonianPath.Core;
 using HamiltonianPath.Core.Domains;
+using HamiltonianPath.Core.Enums;
 
-var dir = Direction.Down | Direction.Up;
+var dir = DirectionFlag.Down | DirectionFlag.Up;
 
 Console.WriteLine(dir);
 

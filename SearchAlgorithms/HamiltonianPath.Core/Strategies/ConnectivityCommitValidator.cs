@@ -1,6 +1,7 @@
 using HamiltonianPath.Core.Abstractions;
 using HamiltonianPath.Core.Contexts;
 using HamiltonianPath.Core.Domains;
+using HamiltonianPath.Core.Enums;
 using HamiltonianPath.Core.Helpers;
 
 namespace HamiltonianPath.Core.Strategies;
@@ -31,7 +32,7 @@ public class ConnectivityCommitValidator : ICommitValidator
 
             MarkConnectedComponent(board, firstNeighbour, marked);
 
-            foreach (var dir in DirectionHelper.All)
+            foreach (var dir in StepHelper.All)
             {
                 if (!state.CanMove(dir))
                     continue;
@@ -65,7 +66,7 @@ public class ConnectivityCommitValidator : ICommitValidator
         {
             var current = queue.Dequeue();
 
-            foreach (var dir in DirectionHelper.All)
+            foreach (var dir in StepHelper.All)
             {
                 if (!TryGetFreeNeighbour(board, current, dir, out var next))
                     continue;
@@ -77,9 +78,9 @@ public class ConnectivityCommitValidator : ICommitValidator
         }
     }
 
-    private static bool TryGetFreeNeighbour(Board board, Point point, Direction dir, out Point nextPoint)
+    private static bool TryGetFreeNeighbour(Board board, Point point, DirectionFlag dir, out Point nextPoint)
     {
-        var (dx, dy) = DirectionHelper.GetOffset(dir);
+        var (dx, dy) = StepHelper.GetOffset(dir);
         var nextX = point.X + dx;
         var nextY = point.Y + dy;
 
@@ -93,9 +94,9 @@ public class ConnectivityCommitValidator : ICommitValidator
         return false;
     }
 
-    private static Point GetNeighbourUnchecked(Board board, Point point, Direction dir)
+    private static Point GetNeighbourUnchecked(Board board, Point point, DirectionFlag dir)
     {
-        var (dx, dy) = DirectionHelper.GetOffset(dir);
+        var (dx, dy) = StepHelper.GetOffset(dir);
         var nextX = point.X + dx;
         var nextY = point.Y + dy;
 
@@ -104,9 +105,9 @@ public class ConnectivityCommitValidator : ICommitValidator
             : new Point(nextX, nextY);
     }
 
-    private static bool TryGetAnyAvailableDirection(PathState state, out Direction dir)
+    private static bool TryGetAnyAvailableDirection(PathState state, out DirectionFlag dir)
     {
-        foreach (var candidate in DirectionHelper.All)
+        foreach (var candidate in StepHelper.All)
         {
             if (!state.CanMove(candidate))
                 continue;
@@ -115,7 +116,7 @@ public class ConnectivityCommitValidator : ICommitValidator
             return true;
         }
 
-        dir = Direction.None;
+        dir = DirectionFlag.None;
         return false;
     }
 }

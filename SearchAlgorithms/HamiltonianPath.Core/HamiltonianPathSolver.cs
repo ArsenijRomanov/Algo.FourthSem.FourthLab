@@ -175,9 +175,9 @@ public class HamiltonianPathSolver(
             var current = queue.Dequeue();
             seen++;
 
-            foreach (var dir in DirectionHelper.All)
+            foreach (var dir in StepHelper.All)
             {
-                var (dx, dy) = DirectionHelper.GetOffset(dir);
+                var (dx, dy) = StepHelper.GetOffset(dir);
                 var nx = current.X + dx;
                 var ny = current.Y + dy;
 
@@ -199,9 +199,9 @@ public class HamiltonianPathSolver(
     {
         var count = 0;
 
-        foreach (var dir in DirectionHelper.All)
+        foreach (var dir in StepHelper.All)
         {
-            var (dx, dy) = DirectionHelper.GetOffset(dir);
+            var (dx, dy) = StepHelper.GetOffset(dir);
             var nx = point.X + dx;
             var ny = point.Y + dy;
 
