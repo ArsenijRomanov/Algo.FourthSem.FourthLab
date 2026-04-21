@@ -22,37 +22,27 @@ public class ConnectivityCommitValidator : ICommitValidator
         if (state.AvailableDirectionsCount < 2)
             return true;
 
-        if (!TryGetAnyAvailableDirection(state, out var firstDir))
+        var remainingFreeCells = board.FreePlacesCount - context.PathLength - 1;
+        if (remainingFreeCells <= 0)
             return true;
-        
+
+        if (!TryGetAnyAvailableNeighbour(board, state, out var firstNeighbour))
+            return true;
+
         EnsureStampBuffer(board.Height, board.Width);
         StartNewStamp();
-        
-        if (!TryGetNeighbour(board, state.Point, firstDir, out var firstNeighbour))
-            return false;
 
-        MarkConnectedComponent(board, firstNeighbour, state.Point);
-
-        foreach (var dir in StepHelper.All)
-        {
-            if (!state.CanMove(dir))
-                continue;
-
-            if (!TryGetNeighbour(board, state.Point, dir, out var neighbour))
-                return false;
-
-            if (!IsMarked(neighbour))
-                return false;
-        }
-
-        return true;
+        var reachable = MarkConnectedComponent(board, firstNeighbour, state.Point);
+        return reachable == remainingFreeCells;
     }
 
-    private void MarkConnectedComponent(Board board, Point start, Point blockedPoint)
+    private int MarkConnectedComponent(Board board, Point start, Point blockedPoint)
     {
         var queue = new Queue<Point>();
+        var markedCount = 0;
 
         Mark(start);
+        markedCount++;
         queue.Enqueue(start);
 
         while (queue.Count > 0)
@@ -65,9 +55,12 @@ public class ConnectivityCommitValidator : ICommitValidator
                     continue;
 
                 Mark(next);
+                markedCount++;
                 queue.Enqueue(next);
             }
         }
+
+        return markedCount;
     }
 
     private bool TryGetFreeNeighbour(
@@ -98,34 +91,18 @@ public class ConnectivityCommitValidator : ICommitValidator
         return false;
     }
 
-    private static bool TryGetNeighbour(Board board, Point point, DirectionFlag dir, out Point neighbour)
+    private static bool TryGetAnyAvailableNeighbour(Board board, PathState state, out Point neighbour)
     {
-        var (dx, dy) = StepHelper.GetOffset(dir);
-        var nextX = point.X + dx;
-        var nextY = point.Y + dy;
-
-        if (!board.Contains(nextY, nextX))
+        foreach (var dir in StepHelper.All)
         {
-            neighbour = default;
-            return false;
-        }
-
-        neighbour = new Point(nextX, nextY);
-        return true;
-    }
-
-    private static bool TryGetAnyAvailableDirection(PathState state, out DirectionFlag dir)
-    {
-        foreach (var candidate in StepHelper.All)
-        {
-            if (!state.CanMove(candidate))
+            if (!state.CanMove(dir))
                 continue;
 
-            dir = candidate;
-            return true;
+            if (board.TryStep(state.Point, dir, out neighbour))
+                return true;
         }
 
-        dir = DirectionFlag.None;
+        neighbour = default;
         return false;
     }
 
