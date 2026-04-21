@@ -10,6 +10,8 @@ public class BfsSolver : ISolver
 {
     public SolveResult Solve(PuzzleBoard board)
     {
+        ArgumentNullException.ThrowIfNull(board);
+        
         var visited = new HashSet<PuzzleBoard>();
         var parents = new Dictionary<PuzzleBoard, (PuzzleBoard parent, Direction dir)>();
         var queue = new Queue<PuzzleBoard>();

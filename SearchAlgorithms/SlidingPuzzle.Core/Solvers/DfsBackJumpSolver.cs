@@ -8,6 +8,8 @@ namespace SlidingPuzzle.Core.Solvers;
 
 public class DfsBackJumpSolver : ISolver
 {
+    private const int Found = -1;
+
     public SolveResult Solve(PuzzleBoard board)
     {
         ArgumentNullException.ThrowIfNull(board);
@@ -16,64 +18,101 @@ public class DfsBackJumpSolver : ISolver
         var path = new List<Direction>();
         var pathVisited = new HashSet<PuzzleBoardKey> { workBoard.GetKey() };
 
-        var isSolved = Search(workBoard, null, pathVisited, path);
+        var searchResult = Search(
+            workBoard,
+            null,
+            depth: 0,
+            lastChoiceDepth: 0,
+            pathVisited,
+            path);
 
-        return isSolved
+        return searchResult == Found
             ? new SolveResult(path.ToArray(), true)
             : new SolveResult([], false);
     }
 
-    private static bool Search(
+    private static int Search(
         PuzzleBoard board,
-        Direction? previousMove,
+        Direction? previousDirection,
+        int depth,
+        int lastChoiceDepth,
         HashSet<PuzzleBoardKey> pathVisited,
         List<Direction> path)
     {
         if (board.IsGoal)
-            return true;
+            return Found;
 
-        var moves = GetOrderedMoves(board, previousMove);
+        var moves = GetAvailableMoves(board, previousDirection, pathVisited);
+
+        if (moves.Count == 0)
+            return lastChoiceDepth;
+
+        var nextLastChoiceDepth = moves.Count > 1
+            ? depth
+            : lastChoiceDepth;
 
         foreach (var dir in moves)
         {
             board.ApplyStep(dir);
             var key = board.GetKey();
 
-            if (!pathVisited.Add(key))
-            {
-                board.UndoStep(dir);
-                continue;
-            }
-
+            pathVisited.Add(key);
             path.Add(dir);
 
-            if (Search(board, dir, pathVisited, path))
-                return true;
+            var searchResult = Search(
+                board,
+                dir,
+                depth + 1,
+                nextLastChoiceDepth,
+                pathVisited,
+                path);
+
+            if (searchResult == Found)
+                return Found;
 
             path.RemoveAt(path.Count - 1);
             pathVisited.Remove(key);
             board.UndoStep(dir);
+
+            if (searchResult < depth)
+                return searchResult;
         }
 
-        return false;
+        return lastChoiceDepth;
     }
 
-    private static List<Direction> GetOrderedMoves(PuzzleBoard board, Direction? previousMove)
+    private static List<Direction> GetAvailableMoves(
+        PuzzleBoard board,
+        Direction? previousDirection,
+        HashSet<PuzzleBoardKey> pathVisited)
     {
         var moves = new List<(Direction dir, int score)>();
 
         foreach (var dir in board.GetValidSteps())
         {
-            if (previousMove.HasValue && dir == DirectionHelper.GetOppositeDirection(previousMove.Value))
+            if (previousDirection.HasValue &&
+                dir == DirectionHelper.GetOppositeDirection(previousDirection.Value))
                 continue;
 
             var nextBoard = board.MakeStep(dir);
+            var key = nextBoard.GetKey();
+
+            if (pathVisited.Contains(key))
+                continue;
+
             moves.Add((dir, nextBoard.TotalManhattanDistance));
         }
 
-        moves.Sort((left, right) => left.score.CompareTo(right.score));
+        moves.Sort((left, right) =>
+        {
+            var scoreComparison = left.score.CompareTo(right.score);
+            return scoreComparison != 0 
+                ? scoreComparison 
+                : left.dir.CompareTo(right.dir);
+        });
 
         var result = new List<Direction>(moves.Count);
+
         foreach (var move in moves)
             result.Add(move.dir);
 
