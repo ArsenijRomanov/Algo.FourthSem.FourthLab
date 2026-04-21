@@ -1,22 +1,24 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Color x:Key="BgColor">#15171C</Color>
-  <Color x:Key="PanelColor">#1E232B</Color>
-  <Color x:Key="BorderColor">#2E3642</Color>
-  <Color x:Key="TextColor">#E8ECF2</Color>
-  <Color x:Key="MutedTextColor">#9AA4B2</Color>
-  <Color x:Key="AccentColor">#5C8DFF</Color>
-  <Color x:Key="SuccessColor">#38D39F</Color>
-  <Color x:Key="DangerColor">#FF5D73</Color>
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <Color x:Key="BgColor">#15171C</Color>
+    <Color x:Key="PanelColor">#1E232B</Color>
+    <Color x:Key="BorderColor">#2E3642</Color>
+    <Color x:Key="TextColor">#E8ECF2</Color>
+    <Color x:Key="MutedTextColor">#9AA4B2</Color>
+    <Color x:Key="AccentColor">#5C8DFF</Color>
+    <Color x:Key="SuccessColor">#38D39F</Color>
+    <Color x:Key="DangerColor">#FF5D73</Color>
 
-  <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}"/>
-  <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource PanelColor}"/>
-  <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
-  <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
-  <SolidColorBrush x:Key="MutedTextBrush" Color="{StaticResource MutedTextColor}"/>
-  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
-  <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
-  <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
+    <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}"/>
+    <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource PanelColor}"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+    <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextColor}"/>
+    <SolidColorBrush x:Key="MutedTextBrush" Color="{StaticResource MutedTextColor}"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}"/>
+  </Styles.Resources>
 
   <Style Selector="Window">
     <Setter Property="Background" Value="{StaticResource BgBrush}"/>
@@ -43,4 +45,4 @@
   <Style Selector="Button:pointerover">
     <Setter Property="Background" Value="#364256"/>
   </Style>
-</ResourceDictionary>
+</Styles>
