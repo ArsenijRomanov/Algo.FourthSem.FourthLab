@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.1.10" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.1.10" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.1.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HamiltonianPath.Core\HamiltonianPath.Core.csproj" />
+    <ProjectReference Include="..\SearchAlgorithms.UI.Shared\SearchAlgorithms.UI.Shared.csproj" />
+  </ItemGroup>
+</Project>

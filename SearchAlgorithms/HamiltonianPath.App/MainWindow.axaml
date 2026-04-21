@@ -1,0 +1,83 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="HamiltonianPath.App.MainWindow"
+        Width="1300" Height="820"
+        Title="Hamiltonian Path Lab"
+        mc:Ignorable="d">
+  <Grid ColumnDefinitions="330,*" Margin="14" ColumnSpacing="12">
+    <ScrollViewer Grid.Column="0">
+      <StackPanel Spacing="12">
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Сетка" FontSize="18" FontWeight="Bold"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="W" VerticalAlignment="Center"/>
+              <NumericUpDown Minimum="2" Maximum="20" Value="{Binding Width}" Width="90"/>
+              <TextBlock Text="H" VerticalAlignment="Center"/>
+              <NumericUpDown Minimum="2" Maximum="20" Value="{Binding Height}" Width="90"/>
+            </StackPanel>
+            <Button Content="Создать матрицу" Command="{Binding BuildBoardCommand}"/>
+            <TextBlock Text="{Binding ModeHint}" Foreground="{StaticResource MutedTextBrush}"/>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Модификации" FontSize="18" FontWeight="Bold"/>
+            <CheckBox Content="Warnsdorff" IsChecked="{Binding UseWarnsdorff}"/>
+            <CheckBox Content="Connectivity pruning" IsChecked="{Binding UseConnectivity}"/>
+            <CheckBox Content="Backjumping" IsChecked="{Binding UseBackjumping}"/>
+            <Button Content="Найти путь" Command="{Binding SolveCommand}"/>
+            <Button Content="Очистить путь" Command="{Binding ClearPathCommand}"/>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Результаты" FontSize="18" FontWeight="Bold"/>
+            <ItemsControl ItemsSource="{Binding Results}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="#252E3A" CornerRadius="8" Padding="8" Margin="0,0,0,6">
+                    <StackPanel>
+                      <TextBlock Text="{Binding Algorithm}" FontWeight="Bold"/>
+                      <TextBlock Text="{Binding Details}" Foreground="{StaticResource MutedTextBrush}"/>
+                      <TextBlock Text="{Binding TimeMs}"/>
+                      <TextBlock Text="{Binding MemoryKb}"/>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Column="1" Classes="card" Padding="18">
+      <UniformGrid Rows="{Binding Height}" Columns="{Binding Width}">
+        <ItemsControl ItemsSource="{Binding Cells}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Rows="{Binding DataContext.Height, RelativeSource={RelativeSource AncestorType=Window}}"
+                           Columns="{Binding DataContext.Width, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Margin="3"
+                      MinWidth="36" MinHeight="36"
+                      Background="{Binding Background}"
+                      BorderBrush="#3B4658"
+                      Content="{Binding Label}"
+                      Command="{Binding DataContext.ToggleCellCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                      CommandParameter="{Binding}"/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </UniformGrid>
+    </Border>
+  </Grid>
+</Window>
