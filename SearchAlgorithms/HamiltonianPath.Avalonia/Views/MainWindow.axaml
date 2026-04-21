@@ -54,8 +54,7 @@
             <CheckBox Content="Отсечение по связности" IsChecked="{Binding UseConnectivity}" />
             <CheckBox Content="Backjumping" IsChecked="{Binding UseBackjumping}" />
             <WrapPanel Orientation="Horizontal">
-              <Button Classes="primary-action" Content="Запустить текущую" Command="{Binding RunCurrentCommand}" />
-              <Button Classes="secondary-action" Content="Запустить базовую + текущую" Command="{Binding RunBaselineAndCurrentCommand}" />
+              <Button Classes="primary-action solve-action" Content="Запустить" Command="{Binding RunCurrentCommand}" />
             </WrapPanel>
           </StackPanel>
         </Border>
