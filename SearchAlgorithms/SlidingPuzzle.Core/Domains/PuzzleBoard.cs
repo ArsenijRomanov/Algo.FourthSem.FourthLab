@@ -3,7 +3,7 @@ using SlidingPuzzle.Core.Helpers;
 
 namespace SlidingPuzzle.Core.Domains;
 
-public class PuzzleBoard : IEquatable<PuzzleBoard>
+public class PuzzleBoard : IEquatable<PuzzleBoard>, IComparable<PuzzleBoard>, IComparable
 {
     private byte[] _board;
 
@@ -252,6 +252,39 @@ public class PuzzleBoard : IEquatable<PuzzleBoard>
         => !Equals(left, right);
 
     public byte[] ToArray() => (byte[])_board.Clone();
+    
+    public int CompareTo(PuzzleBoard? other)
+    {
+        if (ReferenceEquals(this, other)) return 0;
+        if (other is null) return 1;
+        
+        var totalManhattanDistanceComparison = TotalManhattanDistance.CompareTo(other.TotalManhattanDistance);
+        if (totalManhattanDistanceComparison != 0) return totalManhattanDistanceComparison;
+        
+        var blankTilePositionComparison = -BlankTilePosition.CompareTo(other.BlankTilePosition);
+        if (blankTilePositionComparison != 0) return blankTilePositionComparison;
+        
+        var heightComparison = Height.CompareTo(other.Height);
+        if (heightComparison != 0) return heightComparison;
+        
+        var widthComparison = Width.CompareTo(other.Width);
+        if (widthComparison != 0) return widthComparison;
+
+        for (var i = 0; i < _board.Length; ++i)
+        {
+            var tileComparison = _board[i].CompareTo(other[(byte)i]);
+            if (tileComparison != 0) return tileComparison;
+        }
+
+        return 0;
+    }
+
+    public int CompareTo(object? obj)
+    {
+        if (obj is null) return 1;
+        if (ReferenceEquals(this, obj)) return 0;
+        return obj is PuzzleBoard other ? CompareTo(other) : throw new ArgumentException($"Object must be of type {nameof(PuzzleBoard)}");
+    }
     
     private PuzzleBoard Step(Direction dir, bool inPlace)
     {
