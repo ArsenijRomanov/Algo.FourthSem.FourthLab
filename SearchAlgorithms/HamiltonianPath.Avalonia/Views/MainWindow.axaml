@@ -76,8 +76,8 @@
                       <TextBlock Text="{Binding StatusText}" />
                       <WrapPanel>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}{0:0.##} ms'}" /></Border>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}}" /></Border>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding WorkingSetDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}.NET память: {0}'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding WorkingSetDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}RAM процесса: {0}'}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}шагов: {0}'}" /></Border>
                       </WrapPanel>
                       <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Note}" />

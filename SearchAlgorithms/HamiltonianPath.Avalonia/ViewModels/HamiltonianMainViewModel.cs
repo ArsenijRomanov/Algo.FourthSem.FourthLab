@@ -181,6 +181,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
                 _finishColumn = column;
                 break;
         }
+
+        RefreshPathLinks();
     }
 
     public void PaintWalls(int row, int column, bool erase)
@@ -195,6 +197,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
         cell.IsWall = !erase;
         cell.PathIndex = 0;
+        RefreshPathLinks();
     }
 
     public void ClearWalls()
@@ -206,6 +209,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         }
 
         StatusText = "Стены очищены.";
+        RefreshPathLinks();
     }
 
     public void ClearEndpoints()
@@ -213,6 +217,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         ClearStartOnly();
         ClearFinishOnly();
         StatusText = "Старт и финиш очищены.";
+        RefreshPathLinks();
     }
 
     public void ClearAll()
@@ -333,7 +338,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             WorkingSetDeltaBytes = Math.Max(0, benchmark.WorkingSetDeltaBytes),
             Steps = solvedSteps,
             Note = benchmark.Result
-                ? $"Длина пути: {solvedSteps}. Память (managed): {FormatHelper.FormatBytes(Math.Max(0, benchmark.ManagedMemoryDeltaBytes))}."
+                ? $"Длина пути: {solvedSteps}. .NET память: {FormatHelper.FormatBytes(Math.Max(0, benchmark.ManagedMemoryDeltaBytes))}, RAM процесса: {FormatHelper.FormatBytes(Math.Max(0, benchmark.WorkingSetDeltaBytes))}."
                 : "Решатель завершил работу без найденного гамильтонова пути."
         };
     }
@@ -345,6 +350,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             if (!cell.IsWall && !cell.IsStart && !cell.IsFinish)
                 cell.PathIndex = board[cell.Row, cell.Column];
         }
+
+        RefreshPathLinks();
     }
 
     private void ClearSolutionPath()
@@ -354,6 +361,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             if (!cell.IsWall && !cell.IsStart && !cell.IsFinish)
                 cell.PathIndex = 0;
         }
+
+        RefreshPathLinks();
     }
 
     private void RebuildCells()
@@ -368,6 +377,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         }
 
         ClearSolutionPath();
+        RefreshPathLinks();
         OnPropertyChanged(nameof(Cells));
     }
 
@@ -383,6 +393,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         cell.IsStart = false;
         _startRow = null;
         _startColumn = null;
+        RefreshPathLinks();
     }
 
     private void ClearFinishOnly()
@@ -394,6 +405,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         cell.IsFinish = false;
         _finishRow = null;
         _finishColumn = null;
+        RefreshPathLinks();
     }
 
     private static string BuildAlgorithmTitle(bool warnsdorff, bool connectivity, bool backjumping)
@@ -403,5 +415,69 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         if (connectivity) parts.Add("Связность");
         if (backjumping) parts.Add("Backjumping");
         return string.Join(" + ", parts);
+    }
+
+    private void RefreshPathLinks()
+    {
+        foreach (var cell in Cells)
+            cell.SetLinks(false, false, false, false);
+
+        var indexedCells = Cells.Where(static c => c.PathIndex > 0).ToList();
+        if (indexedCells.Count == 0)
+            return;
+
+        var byIndex = indexedCells.ToDictionary(static c => c.PathIndex);
+        var minCell = byIndex[byIndex.Keys.Min()];
+        var maxCell = byIndex[byIndex.Keys.Max()];
+
+        foreach (var cell in indexedCells)
+        {
+            var top = TryGetPathIndex(cell.Row - 1, cell.Column, out var topIndex) && Math.Abs(topIndex - cell.PathIndex) == 1;
+            var right = TryGetPathIndex(cell.Row, cell.Column + 1, out var rightIndex) && Math.Abs(rightIndex - cell.PathIndex) == 1;
+            var bottom = TryGetPathIndex(cell.Row + 1, cell.Column, out var bottomIndex) && Math.Abs(bottomIndex - cell.PathIndex) == 1;
+            var left = TryGetPathIndex(cell.Row, cell.Column - 1, out var leftIndex) && Math.Abs(leftIndex - cell.PathIndex) == 1;
+            cell.SetLinks(top, right, bottom, left);
+        }
+
+        var startCell = Cells.FirstOrDefault(static c => c.IsStart);
+        if (startCell is not null)
+            ConnectEndpoint(startCell, minCell, maxCell);
+
+        var finishCell = Cells.FirstOrDefault(static c => c.IsFinish);
+        if (finishCell is not null)
+            ConnectEndpoint(finishCell, maxCell, minCell);
+    }
+
+    private void ConnectEndpoint(HamiltonianBoardCellViewModel endpoint, HamiltonianBoardCellViewModel primary, HamiltonianBoardCellViewModel secondary)
+    {
+        if (TryApplyLink(endpoint, primary))
+            return;
+
+        TryApplyLink(endpoint, secondary);
+    }
+
+    private bool TryApplyLink(HamiltonianBoardCellViewModel from, HamiltonianBoardCellViewModel to)
+    {
+        var dr = to.Row - from.Row;
+        var dc = to.Column - from.Column;
+        if (Math.Abs(dr) + Math.Abs(dc) != 1)
+            return false;
+
+        from.SetLinks(dr == -1, dc == 1, dr == 1, dc == -1);
+        return true;
+    }
+
+    private bool TryGetPathIndex(int row, int column, out int index)
+    {
+        index = 0;
+        if (row < 0 || column < 0 || row >= BoardHeight || column >= BoardWidth)
+            return false;
+
+        var cell = GetCell(row, column);
+        if (cell.PathIndex <= 0)
+            return false;
+
+        index = cell.PathIndex;
+        return true;
     }
 }
