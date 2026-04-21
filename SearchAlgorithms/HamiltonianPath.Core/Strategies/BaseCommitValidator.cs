@@ -1,8 +1,8 @@
-using GridSearch.Core.Abstractions;
-using GridSearch.Core.Contexts;
-using GridSearch.Core.Domains;
+using HamiltonianPath.Core.Abstractions;
+using HamiltonianPath.Core.Contexts;
+using HamiltonianPath.Core.Domains;
 
-namespace GridSearch.Core.Strategies;
+namespace HamiltonianPath.Core.Strategies;
 
 public class BaseCommitValidator : ICommitValidator
 {

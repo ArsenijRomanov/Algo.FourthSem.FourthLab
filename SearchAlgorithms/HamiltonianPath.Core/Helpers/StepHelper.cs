@@ -1,6 +1,6 @@
-using GridSearch.Core.Domains;
+using HamiltonianPath.Core.Domains;
 
-namespace GridSearch.Core.Helpers;
+namespace HamiltonianPath.Core.Helpers;
 
 public static class DirectionHelper
 {

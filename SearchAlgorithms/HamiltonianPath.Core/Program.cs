@@ -1,6 +1,6 @@
 ﻿
-using GridSearch.Core;
-using GridSearch.Core.Domains;
+using HamiltonianPath.Core;
+using HamiltonianPath.Core.Domains;
 
 var dir = Direction.Down | Direction.Up;
 

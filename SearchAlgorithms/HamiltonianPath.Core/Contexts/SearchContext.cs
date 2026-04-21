@@ -1,6 +1,6 @@
-using GridSearch.Core.Domains;
+using HamiltonianPath.Core.Domains;
 
-namespace GridSearch.Core.Contexts;
+namespace HamiltonianPath.Core.Contexts;
 
 public struct SearchContext
 {

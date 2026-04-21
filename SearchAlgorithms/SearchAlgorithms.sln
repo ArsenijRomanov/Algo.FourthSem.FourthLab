@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GridSearch.Core", "GridSearch.Core\GridSearch.Core.csproj", "{680E06AE-6142-43AE-8D36-D69AD6F2E6E7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HamiltonianPath.Core", "HamiltonianPath.Core\HamiltonianPath.Core.csproj", "{680E06AE-6142-43AE-8D36-D69AD6F2E6E7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

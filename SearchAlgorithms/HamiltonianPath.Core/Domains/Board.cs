@@ -1,10 +1,11 @@
-using GridSearch.Core.Helpers;
+using HamiltonianPath.Core.Helpers;
 
-namespace GridSearch.Core.Domains;
+namespace HamiltonianPath.Core.Domains;
 
 public class Board
 {
     private readonly int[,] _matrix;
+    private const int WallNumber = -100;
     public int Height { get; }
     public int Width { get; }
     public Point Start { get; }
@@ -17,10 +18,52 @@ public class Board
         
         Height = matrix.GetLength(0);
         Width = matrix.GetLength(1);
+        
+        if (!Contains(start))
+            throw new ArgumentOutOfRangeException(nameof(start));
+        if (!Contains(finish))
+            throw new ArgumentOutOfRangeException(nameof(finish));
+        if (matrix[start.Y, start.X] != 0)
+            throw new ArgumentException(null, nameof(start));
+        if (matrix[finish.Y, finish.X] != 0)
+            throw new ArgumentException(null, nameof(finish));
+
+        var freePlacesCount = 0;
+        for (var y = 0; y < Height; ++y)
+        {
+            for (var x = 0; x < Width; ++x)
+            {
+                if (matrix[y, x] != WallNumber && matrix[y, x] != 0)
+                    throw new ArgumentException(null, nameof(matrix));
+
+                if (matrix[y, x] == 0)
+                    ++freePlacesCount;
+            }
+        }
+        
         _matrix = matrix;
         Start = start;
         Finish = finish;
-        FreePlacesCount = Height * Width;
+        FreePlacesCount = freePlacesCount;
+    }
+
+    public Board(int height, int width, Point start, Point finish)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+
+        Height = height;
+        Width = width;
+        
+        if (!Contains(start))
+            throw new ArgumentOutOfRangeException(nameof(start));
+        if (!Contains(finish))
+            throw new ArgumentOutOfRangeException(nameof(finish));
+        
+        _matrix = new int[height, width];
+        Start = start;
+        Finish = finish;
+        FreePlacesCount = height * width;
     }
 
     public int this[int y, int x]
@@ -42,7 +85,11 @@ public class Board
     
     public void SetWall(Point point)
     {
-        this[point] = -100;
+        if (point == Start || point == Finish)
+            throw new InvalidOperationException();
+        
+        if (this[point] == WallNumber) return;
+        this[point] = WallNumber;
         --FreePlacesCount;
     }
 

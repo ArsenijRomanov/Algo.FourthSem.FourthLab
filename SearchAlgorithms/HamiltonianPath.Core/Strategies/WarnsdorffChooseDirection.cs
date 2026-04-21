@@ -1,8 +1,8 @@
-using GridSearch.Core.Abstractions;
-using GridSearch.Core.Domains;
-using GridSearch.Core.Helpers;
+using HamiltonianPath.Core.Abstractions;
+using HamiltonianPath.Core.Domains;
+using HamiltonianPath.Core.Helpers;
 
-namespace GridSearch.Core.Strategies;
+namespace HamiltonianPath.Core.Strategies;
 
 public class WarnsdorffChooseDirection : IChooseDirection
 {

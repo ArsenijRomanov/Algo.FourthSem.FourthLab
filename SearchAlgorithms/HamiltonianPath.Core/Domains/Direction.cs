@@ -1,4 +1,4 @@
-namespace GridSearch.Core.Domains;
+namespace HamiltonianPath.Core.Domains;
 
 [Flags]
 public enum Direction: byte

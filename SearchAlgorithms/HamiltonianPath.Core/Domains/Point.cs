@@ -1,4 +1,4 @@
-namespace GridSearch.Core.Domains;
+namespace HamiltonianPath.Core.Domains;
 
 public readonly struct Point : IEquatable<Point>
 {

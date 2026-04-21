@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace GridSearch.Core.Domains;
+namespace HamiltonianPath.Core.Domains;
 
 public struct PathState(Point point, Direction dirsMask = Direction.None)
 {

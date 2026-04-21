@@ -1,6 +1,6 @@
-using GridSearch.Core.Domains;
+using HamiltonianPath.Core.Domains;
 
-namespace GridSearch.Core.Abstractions;
+namespace HamiltonianPath.Core.Abstractions;
 
 public interface IChooseDirection
 {
