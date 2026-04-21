@@ -62,7 +62,10 @@
 
         <Border Classes="card">
           <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="Результаты" />
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Left" Classes="section-title" Text="Результаты" />
+              <Button DockPanel.Dock="Right" Width="170" Classes="secondary-action" Content="Очистить результаты" Command="{Binding ClearResultsCommand}" />
+            </DockPanel>
             <ItemsControl ItemsSource="{Binding Results}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>

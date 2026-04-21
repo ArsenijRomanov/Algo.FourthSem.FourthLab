@@ -37,6 +37,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         ClearWallsCommand = new RelayCommand(ClearWalls);
         ClearEndpointsCommand = new RelayCommand(ClearEndpoints);
         ClearAllCommand = new RelayCommand(ClearAll);
+        ClearResultsCommand = new RelayCommand(ClearResults);
         RunCurrentCommand = new AsyncRelayCommand(RunCurrentAsync, () => !IsBusy);
         RunBaselineAndCurrentCommand = new AsyncRelayCommand(RunBaselineAndCurrentAsync, () => !IsBusy);
 
@@ -50,6 +51,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     public RelayCommand ClearWallsCommand { get; }
     public RelayCommand ClearEndpointsCommand { get; }
     public RelayCommand ClearAllCommand { get; }
+    public RelayCommand ClearResultsCommand { get; }
     public AsyncRelayCommand RunCurrentCommand { get; }
     public AsyncRelayCommand RunBaselineAndCurrentCommand { get; }
 
@@ -238,6 +240,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         RebuildCells();
         Results.Clear();
         StatusText = "Поле и результаты очищены.";
+    }
+
+    public void ClearResults()
+    {
+        Results.Clear();
+        StatusText = "Результаты очищены.";
     }
 
     private Task RunCurrentAsync()
