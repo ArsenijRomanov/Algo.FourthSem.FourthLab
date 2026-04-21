@@ -15,17 +15,17 @@
           <StackPanel Spacing="10">
             <TextBlock Classes="section-title" Text="Board configuration" />
             <TextBlock Classes="caption" Text="Set size, pick tools, place start and finish, then paint walls on the grid." />
-            <Grid ColumnDefinitions="*,*">
-              <StackPanel Margin="0,0,5,0">
+            <Grid ColumnDefinitions="*,10,*">
+              <StackPanel Grid.Column="0">
                 <TextBlock Classes="caption" Text="Width" />
                 <NumericUpDown Minimum="2" Maximum="20" Value="{Binding BoardWidth}" />
               </StackPanel>
-              <StackPanel Grid.Column="1" Margin="5,0,0,0">
+              <StackPanel Grid.Column="2">
                 <TextBlock Classes="caption" Text="Height" />
                 <NumericUpDown Minimum="2" Maximum="20" Value="{Binding BoardHeight}" />
               </StackPanel>
             </Grid>
-            <WrapPanel ItemHeight="40" ItemWidth="0" Orientation="Horizontal">
+            <WrapPanel>
               <Button Classes="secondary-action" Content="Apply size" Command="{Binding ResizeBoardCommand}" />
               <Button Classes="secondary-action" Content="Clear walls" Command="{Binding ClearWallsCommand}" />
               <Button Classes="secondary-action" Content="Clear endpoints" Command="{Binding ClearEndpointsCommand}" />

@@ -1,6 +1,6 @@
-using Avalonia.Interactivity;
-using Avalonia.Controls;
-using Avalonia.Input;
+using global::Avalonia.Controls;
+using global::Avalonia.Input;
+using global::Avalonia.Interactivity;
 using SlidingPuzzle.Avalonia.ViewModels;
 using SlidingPuzzle.Core.Enums;
 

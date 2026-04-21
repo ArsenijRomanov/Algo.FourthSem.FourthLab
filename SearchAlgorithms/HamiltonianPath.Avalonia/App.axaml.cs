@@ -1,6 +1,6 @@
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Markup.Xaml;
+using global::Avalonia;
+using global::Avalonia.Controls.ApplicationLifetimes;
+using global::Avalonia.Markup.Xaml;
 using HamiltonianPath.Avalonia.ViewModels;
 using HamiltonianPath.Avalonia.Views;
 using SearchAlgorithms.UI.Shared.Services;

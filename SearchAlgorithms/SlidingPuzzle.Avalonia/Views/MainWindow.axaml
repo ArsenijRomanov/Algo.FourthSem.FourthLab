@@ -48,7 +48,10 @@
         <Border Classes="card">
           <StackPanel Spacing="10">
             <TextBlock Classes="section-title" Text="Playback and manual control" />
-            <Border Classes="metric-badge" Background="{Binding PlaybackBackgroundBrush}" BorderBrush="{Binding PlaybackBorderBrush}" BorderThickness="1">
+            <Border Classes="metric-badge"
+                    Background="{Binding PlaybackBackgroundBrush}"
+                    BorderBrush="{Binding PlaybackBorderBrush}"
+                    BorderThickness="1">
               <TextBlock Text="{Binding PlaybackStatusText}" />
             </Border>
             <TextBlock Classes="caption" Text="{Binding StatusText}" TextWrapping="Wrap" />
@@ -109,7 +112,8 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Border Classes="metric-badge" Background="{Binding IsActive, Converter={x:Static local:ActiveChipBrushConverter.Instance}}">
+                  <Border Classes="metric-badge"
+                          Background="{Binding IsActive, Converter={x:Static local:ActiveChipBrushConverter.Instance}}">
                     <TextBlock Text="{Binding Text}" />
                   </Border>
                 </DataTemplate>

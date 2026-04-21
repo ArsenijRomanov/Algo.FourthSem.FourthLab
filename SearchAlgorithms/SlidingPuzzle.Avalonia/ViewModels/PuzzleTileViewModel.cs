@@ -1,5 +1,5 @@
-using Avalonia;
-using Avalonia.Media;
+using global::Avalonia;
+using global::Avalonia.Media;
 using SearchAlgorithms.UI.Shared.Mvvm;
 
 namespace SlidingPuzzle.Avalonia.ViewModels;

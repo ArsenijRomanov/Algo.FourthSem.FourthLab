@@ -1,5 +1,5 @@
-using Avalonia.Controls;
-using Avalonia.Input;
+using global::Avalonia.Controls;
+using global::Avalonia.Input;
 using SlidingPuzzle.Avalonia.ViewModels;
 
 namespace SlidingPuzzle.Avalonia.Views.Controls;

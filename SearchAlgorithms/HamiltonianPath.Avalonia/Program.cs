@@ -1,11 +1,10 @@
-using Avalonia;
-using System;
+using global::Avalonia;
 
 namespace HamiltonianPath.Avalonia;
 
 internal sealed class Program
 {
-    [STAThread]
+    [System.STAThread]
     public static void Main(string[] args) => BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
     public static AppBuilder BuildAvaloniaApp()
