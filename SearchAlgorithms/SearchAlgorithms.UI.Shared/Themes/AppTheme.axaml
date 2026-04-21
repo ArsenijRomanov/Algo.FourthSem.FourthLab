@@ -67,6 +67,12 @@
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
+  <Style Selector="Button.toolbar-chip.selected-tool">
+    <Setter Property="Background" Value="#1D2330" />
+    <Setter Property="BorderBrush" Value="#8E86FF" />
+    <Setter Property="BorderThickness" Value="1.5" />
+  </Style>
+
   <Style Selector="Button.primary-action">
     <Setter Property="Padding" Value="14,10" />
     <Setter Property="Background" Value="{StaticResource AccentBrush}" />

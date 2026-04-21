@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using HamiltonianPath.Avalonia.Models;
 using HamiltonianPath.Core;
 using HamiltonianPath.Core.Abstractions;
@@ -7,16 +8,16 @@ using HamiltonianPath.Core.Strategies;
 using SearchAlgorithms.UI.Shared.Helpers;
 using SearchAlgorithms.UI.Shared.Models;
 using SearchAlgorithms.UI.Shared.Mvvm;
-using SearchAlgorithms.UI.Shared.Services;
 
 namespace HamiltonianPath.Avalonia.ViewModels;
 
 public sealed class HamiltonianMainViewModel : ObservableObject
 {
-    private readonly BenchmarkService _benchmarkService;
     private HamiltonianTool _selectedTool = HamiltonianTool.Wall;
     private int _boardWidth = 7;
     private int _boardHeight = 7;
+    private int _pendingBoardWidth = 7;
+    private int _pendingBoardHeight = 7;
     private bool _useWarnsdorff;
     private bool _useConnectivity;
     private bool _useBackjumping;
@@ -27,10 +28,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     private string _statusText = "Настройте поле и запустите решатель.";
     private bool _isBusy;
 
-    public HamiltonianMainViewModel(BenchmarkService benchmarkService)
+    public HamiltonianMainViewModel()
     {
-        _benchmarkService = benchmarkService;
-
         Cells = [];
         Results = [];
 
@@ -57,13 +56,25 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     public int BoardWidth
     {
         get => _boardWidth;
-        set => SetProperty(ref _boardWidth, Math.Clamp(value, 2, 20));
+        private set => SetProperty(ref _boardWidth, Math.Clamp(value, 2, 20));
     }
 
     public int BoardHeight
     {
         get => _boardHeight;
-        set => SetProperty(ref _boardHeight, Math.Clamp(value, 2, 20));
+        private set => SetProperty(ref _boardHeight, Math.Clamp(value, 2, 20));
+    }
+
+    public int PendingBoardWidth
+    {
+        get => _pendingBoardWidth;
+        set => SetProperty(ref _pendingBoardWidth, Math.Clamp(value, 2, 20));
+    }
+
+    public int PendingBoardHeight
+    {
+        get => _pendingBoardHeight;
+        set => SetProperty(ref _pendingBoardHeight, Math.Clamp(value, 2, 20));
     }
 
     public bool UseWarnsdorff
@@ -111,6 +122,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
     public void ResizeBoard()
     {
+        BoardWidth = PendingBoardWidth;
+        BoardHeight = PendingBoardHeight;
         RebuildCells();
         StatusText = $"Размер поля изменён: {BoardHeight} × {BoardWidth}.";
     }
@@ -320,10 +333,18 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             ? new ConnectivityCommitValidator()
             : new BaseCommitValidator();
 
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        var managedBefore = GC.GetTotalMemory(true);
+        var stopwatch = Stopwatch.StartNew();
         var solver = new HamiltonianPathSolver(chooseDirection, commitValidator, backjumping);
-        var benchmark = _benchmarkService.Run(() => solver.Solve(board));
+        var isSolved = solver.Solve(board);
+        stopwatch.Stop();
+        var managedAfter = GC.GetTotalMemory(true);
+        var managedDelta = Math.Max(0, managedAfter - managedBefore);
 
-        if (benchmark.Result)
+        if (isSolved)
             ApplySolution(board);
 
         var solvedSteps = Cells.Where(static c => c.PathIndex > 0).Count();
@@ -331,14 +352,14 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         return new AlgorithmRunRecord
         {
             Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
-            IsSuccess = benchmark.Result,
-            StatusText = benchmark.Result ? "Решено" : "Путь не найден",
-            Elapsed = benchmark.Elapsed,
-            ManagedMemoryDeltaBytes = Math.Max(0, benchmark.ManagedMemoryDeltaBytes),
-            WorkingSetDeltaBytes = Math.Max(0, benchmark.WorkingSetDeltaBytes),
+            IsSuccess = isSolved,
+            StatusText = isSolved ? "Решено" : "Путь не найден",
+            Elapsed = stopwatch.Elapsed,
+            ManagedMemoryDeltaBytes = managedDelta,
+            WorkingSetDeltaBytes = 0,
             Steps = solvedSteps,
-            Note = benchmark.Result
-                ? $"Длина пути: {solvedSteps}. .NET память: {FormatHelper.FormatBytes(Math.Max(0, benchmark.ManagedMemoryDeltaBytes))}, RAM процесса: {FormatHelper.FormatBytes(Math.Max(0, benchmark.WorkingSetDeltaBytes))}."
+            Note = isSolved
+                ? $"Длина пути: {solvedSteps}. .NET память: {FormatHelper.FormatBytes(managedDelta)}."
                 : "Решатель завершил работу без найденного гамильтонова пути."
         };
     }

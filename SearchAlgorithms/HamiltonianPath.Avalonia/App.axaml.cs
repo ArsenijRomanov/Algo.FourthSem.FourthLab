@@ -3,7 +3,6 @@ using global::Avalonia.Controls.ApplicationLifetimes;
 using global::Avalonia.Markup.Xaml;
 using HamiltonianPath.Avalonia.ViewModels;
 using HamiltonianPath.Avalonia.Views;
-using SearchAlgorithms.UI.Shared.Services;
 
 namespace HamiltonianPath.Avalonia;
 
@@ -17,7 +16,7 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new HamiltonianMainViewModel(new BenchmarkService())
+                DataContext = new HamiltonianMainViewModel()
             };
         }
 
