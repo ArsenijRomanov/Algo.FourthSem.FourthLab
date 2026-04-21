@@ -251,7 +251,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         StatusText = "Результаты очищены.";
     }
 
-    private Task RunCurrentAsync()
+    private async Task RunCurrentAsync()
     {
         IsBusy = true;
         try
@@ -259,7 +259,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             AlgorithmRunRecord result;
             try
             {
-                result = SolveCurrentConfiguration();
+                result = await SolveCurrentConfigurationAsync();
             }
             catch (Exception ex)
             {
@@ -273,11 +273,9 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         {
             IsBusy = false;
         }
-
-        return Task.CompletedTask;
     }
 
-    private Task RunBaselineAndCurrentAsync()
+    private async Task RunBaselineAndCurrentAsync()
     {
         IsBusy = true;
         try
@@ -285,7 +283,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             AlgorithmRunRecord baseline;
             try
             {
-                baseline = SolveConfiguration(false, false, false);
+                baseline = await SolveConfigurationAsync(false, false, false);
             }
             catch (Exception ex)
             {
@@ -297,7 +295,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             AlgorithmRunRecord current;
             try
             {
-                current = SolveCurrentConfiguration();
+                current = await SolveCurrentConfigurationAsync();
             }
             catch (Exception ex)
             {
@@ -313,14 +311,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         {
             IsBusy = false;
         }
-
-        return Task.CompletedTask;
     }
 
-    private AlgorithmRunRecord SolveCurrentConfiguration()
-        => SolveConfiguration(UseWarnsdorff, UseConnectivity, UseBackjumping);
+    private Task<AlgorithmRunRecord> SolveCurrentConfigurationAsync()
+        => SolveConfigurationAsync(UseWarnsdorff, UseConnectivity, UseBackjumping);
 
-    private AlgorithmRunRecord SolveConfiguration(bool warnsdorff, bool connectivity, bool backjumping)
+    private async Task<AlgorithmRunRecord> SolveConfigurationAsync(bool warnsdorff, bool connectivity, bool backjumping)
     {
         ClearSolutionPath();
 
@@ -345,12 +341,21 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
         var start = new Point(_startColumn.Value, _startRow.Value);
         var finish = new Point(_finishColumn.Value, _finishRow.Value);
+        var computation = await Task.Run(() => ComputeSolve(warnsdorff, connectivity, backjumping, matrix, start, finish));
 
-        var board = new Board(matrix, start, finish);
+        if (computation.SolvedMatrix is not null)
+            ApplySolution(computation.SolvedMatrix);
+
+        return computation.Record;
+    }
+
+    private static SolveComputation ComputeSolve(bool warnsdorff, bool connectivity, bool backjumping, int[,] matrix, Point start, Point finish)
+    {
+        var board = new Board((int[,])matrix.Clone(), start, finish);
 
         if (!HamiltonianPathSolver.CanHaveHamiltonianPath(board))
         {
-            return new AlgorithmRunRecord
+            return new SolveComputation(new AlgorithmRunRecord
             {
                 Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
                 IsSuccess = false,
@@ -360,7 +365,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
                 Note = "При текущем старте, финише и стенах гамильтонов путь невозможен."
-            };
+            }, null);
         }
 
         IChooseDirection chooseDirection = warnsdorff
@@ -382,14 +387,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         var managedAfter = GC.GetTotalMemory(true);
         var managedDelta = Math.Max(0, managedAfter - managedBefore);
 
-        if (isSolved)
-            ApplySolution(board);
+        var solvedMatrix = isSolved ? ExtractPathMatrix(board, matrix.GetLength(0), matrix.GetLength(1)) : null;
+        var solvedSteps = isSolved && solvedMatrix is not null
+            ? CountSolvedSteps(solvedMatrix)
+            : 0;
 
-        var solvedSteps = Cells.Where(static c => c.PathIndex > 0).Count();
-        if (isSolved)
-            solvedSteps += 1;
-
-        return new AlgorithmRunRecord
+        return new SolveComputation(new AlgorithmRunRecord
         {
             Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
             IsSuccess = isSolved,
@@ -401,19 +404,48 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             Note = isSolved
                 ? $"Длина пути: {solvedSteps}. .NET память: {FormatHelper.FormatBytes(managedDelta)}."
                 : "Решатель завершил работу без найденного гамильтонова пути."
-        };
+        }, solvedMatrix);
     }
 
-    private void ApplySolution(Board board)
+    private static int[,] ExtractPathMatrix(Board board, int height, int width)
+    {
+        var solved = new int[height, width];
+        for (var row = 0; row < height; row++)
+        {
+            for (var col = 0; col < width; col++)
+                solved[row, col] = board[row, col];
+        }
+
+        return solved;
+    }
+
+    private static int CountSolvedSteps(int[,] solvedMatrix)
+    {
+        var steps = 1;
+        for (var row = 0; row < solvedMatrix.GetLength(0); row++)
+        {
+            for (var col = 0; col < solvedMatrix.GetLength(1); col++)
+            {
+                if (solvedMatrix[row, col] > 0)
+                    steps++;
+            }
+        }
+
+        return steps;
+    }
+
+    private void ApplySolution(int[,] solvedMatrix)
     {
         foreach (var cell in Cells)
         {
             if (!cell.IsWall && !cell.IsStart && !cell.IsFinish)
-                cell.PathIndex = board[cell.Row, cell.Column];
+                cell.PathIndex = solvedMatrix[cell.Row, cell.Column];
         }
 
         RefreshPathLinks();
     }
+
+    private sealed record SolveComputation(AlgorithmRunRecord Record, int[,]? SolvedMatrix);
 
     private void ClearSolutionPath()
     {
