@@ -16,12 +16,21 @@
           <StackPanel Spacing="10">
             <TextBlock Classes="section-title" Text="Настройка поля" />
             <TextBlock Classes="caption" Text="Правое поле автоматически подстраивается под размер окна." />
-            <StackPanel>
-              <TextBlock Classes="caption" Text="Размер" />
-              <NumericUpDown Minimum="2" Maximum="6" Value="{Binding Size}" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,10,*">
+              <StackPanel Grid.Column="0">
+                <TextBlock Classes="caption" Text="Ширина" />
+                <NumericUpDown Minimum="2" Maximum="6" Value="{Binding BoardWidth}" />
+              </StackPanel>
+              <StackPanel Grid.Column="2">
+                <TextBlock Classes="caption" Text="Высота" />
+                <NumericUpDown Minimum="2" Maximum="6" Value="{Binding BoardHeight}" />
+              </StackPanel>
+            </Grid>
             <WrapPanel>
               <Button Classes="secondary-action" Content="Случайно" Command="{Binding RandomizeCommand}" />
+              <TextBox Width="170"
+                       Watermark="Случайных ходов (0 = полный рандом)"
+                       Text="{Binding RandomShuffleMovesText}" />
               <Button Classes="secondary-action" Content="Собранная" Command="{Binding ResetSolvedCommand}" />
               <Button Classes="secondary-action" Content="Импорт" Click="ImportButton_Click" />
               <Button Classes="secondary-action" Content="Экспорт" Click="ExportButton_Click" />
@@ -32,16 +41,6 @@
               <ToggleSwitch Classes="mode-toggle" IsChecked="{Binding IsEditMode}" />
             </StackPanel>
             <TextBlock Classes="caption" Text="В игровом режиме стрелки и клики по соседям двигают пустую клетку. В режиме редактирования можно менять местами любые плитки перетаскиванием." />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card">
-          <StackPanel Spacing="8">
-            <TextBlock Classes="section-title" Text="Алгоритм" />
-            <ComboBox SelectedItem="{Binding SelectedAlgorithm}" ItemsSource="{Binding AlgorithmOptions}" />
-            <WrapPanel>
-              <Button Classes="primary-action solve-action" Content="Решить текущее поле" Command="{Binding RunCurrentCommand}" />
-            </WrapPanel>
           </StackPanel>
         </Border>
 
@@ -60,18 +59,28 @@
               <Button Classes="secondary-action" Content="Пред. шаг" Command="{Binding StepBackwardCommand}" />
               <Button Classes="secondary-action" Content="След. шаг" Command="{Binding StepForwardCommand}" />
             </WrapPanel>
-            <Grid ColumnDefinitions="60,60,60" RowDefinitions="60,60,60" HorizontalAlignment="Center">
-              <Button Grid.Column="1" Grid.Row="0" Classes="toolbar-chip" Content="↑" Command="{Binding MoveUpCommand}" />
-              <Button Grid.Column="0" Grid.Row="1" Classes="toolbar-chip" Content="←" Command="{Binding MoveLeftCommand}" />
-              <Button Grid.Column="2" Grid.Row="1" Classes="toolbar-chip" Content="→" Command="{Binding MoveRightCommand}" />
-              <Button Grid.Column="1" Grid.Row="2" Classes="toolbar-chip" Content="↓" Command="{Binding MoveDownCommand}" />
-            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Classes="section-title" Text="Алгоритмы" />
+            <ComboBox x:Name="AlgorithmComboBox"
+                      SelectedItem="{Binding SelectedAlgorithm}"
+                      ItemsSource="{Binding AlgorithmOptions}"
+                      SelectionChanged="AlgorithmComboBox_SelectionChanged" />
+            <WrapPanel>
+              <Button Classes="primary-action solve-action" Content="Решить текущее поле" Command="{Binding RunCurrentCommand}" />
+            </WrapPanel>
           </StackPanel>
         </Border>
 
         <Border Classes="card">
           <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="Результаты" />
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Left" Classes="section-title" Text="Результаты" />
+              <Button DockPanel.Dock="Right" Width="170" Classes="secondary-action" Content="Очистить результаты" Command="{Binding ClearResultsCommand}" />
+            </DockPanel>
             <ItemsControl ItemsSource="{Binding Results}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -81,7 +90,6 @@
                       <WrapPanel>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}{0:0.##} ms'}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}.NET память: {0}'}" /></Border>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding WorkingSetDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}RAM процесса: {0}'}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}ходов: {0}'}" /></Border>
                       </WrapPanel>
                       <TextBlock Text="{Binding StatusText}" />

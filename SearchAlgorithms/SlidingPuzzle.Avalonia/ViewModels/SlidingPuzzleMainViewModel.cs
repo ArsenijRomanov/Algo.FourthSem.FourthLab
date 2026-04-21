@@ -24,9 +24,11 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     private readonly Stack<PuzzleUiSnapshot> _undoStack = [];
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
-    private int _size = 4;
+    private int _boardWidth = 4;
+    private int _boardHeight = 4;
     private bool _isBusy;
     private bool _isEditMode;
+    private string _randomShuffleMovesText = "120";
     private PlaybackStatus _playbackStatus = PlaybackStatus.None;
     private string _statusText = "Готово.";
     private PuzzleAlgorithmKind _selectedAlgorithm = PuzzleAlgorithmKind.AStar;
@@ -48,6 +50,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         RandomizeCommand = new RelayCommand(RandomizeBoard);
         ResetSolvedCommand = new RelayCommand(ResetToSolved);
         UndoCommand = new RelayCommand(Undo, () => _undoStack.Count > 0);
+        ClearResultsCommand = new RelayCommand(ClearResults, () => Results.Count > 0);
         RunCurrentCommand = new AsyncRelayCommand(RunCurrentAsync, () => !IsBusy);
         StepForwardCommand = new RelayCommand(StepForward, () => CanStepForward);
         StepBackwardCommand = new RelayCommand(StepBackward, () => CanStepBackward);
@@ -67,6 +70,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     public RelayCommand RandomizeCommand { get; }
     public RelayCommand ResetSolvedCommand { get; }
     public RelayCommand UndoCommand { get; }
+    public RelayCommand ClearResultsCommand { get; }
     public AsyncRelayCommand RunCurrentCommand { get; }
     public RelayCommand StepForwardCommand { get; }
     public RelayCommand StepBackwardCommand { get; }
@@ -75,14 +79,30 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     public RelayCommand MoveLeftCommand { get; }
     public RelayCommand MoveRightCommand { get; }
 
-    public int Size
+    public int BoardWidth
     {
-        get => _size;
+        get => _boardWidth;
         set
         {
-            if (SetProperty(ref _size, Math.Clamp(value, 2, 6)))
+            if (SetProperty(ref _boardWidth, Math.Clamp(value, 2, 6)))
                 ResetToSolved();
         }
+    }
+
+    public int BoardHeight
+    {
+        get => _boardHeight;
+        set
+        {
+            if (SetProperty(ref _boardHeight, Math.Clamp(value, 2, 6)))
+                ResetToSolved();
+        }
+    }
+
+    public string RandomShuffleMovesText
+    {
+        get => _randomShuffleMovesText;
+        set => SetProperty(ref _randomShuffleMovesText, value);
     }
 
     public bool IsBusy
@@ -203,7 +223,10 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         if (dto?.Tiles is null || dto.Tiles.Length == 0)
             return;
 
-        Size = dto.Size;
+        var width = dto.Width > 0 ? dto.Width : dto.Size;
+        var height = dto.Height > 0 ? dto.Height : dto.Size;
+        BoardWidth = width;
+        BoardHeight = height;
         _undoStack.Clear();
         LoadBoard(dto.Tiles, clearPlayback: true);
         StatusText = "Поле импортировано.";
@@ -213,7 +236,9 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     {
         var dto = new PuzzleBoardFileDto
         {
-            Size = Size,
+            Size = Math.Max(BoardWidth, BoardHeight),
+            Width = BoardWidth,
+            Height = BoardHeight,
             Tiles = (byte[])_tiles.Clone()
         };
 
@@ -225,19 +250,24 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     public void RandomizeBoard()
     {
         var builder = new PuzzleBoardBuilder()
-            .WithSize((byte)Size, (byte)Size)
-            .WithShuffleStepCount(120)
+            .WithSize((byte)BoardHeight, (byte)BoardWidth)
             .AllowGoal(false);
 
-        var board = builder.BuildRandomSolvablePermutation();
+        var hasFixedShuffleMoves = int.TryParse(RandomShuffleMovesText, out var shuffleMoves) && shuffleMoves > 0;
+        var board = hasFixedShuffleMoves
+            ? builder.WithShuffleStepCount(shuffleMoves).BuildRandomSolvable()
+            : builder.BuildRandomSolvablePermutation();
+
         _undoStack.Clear();
         LoadBoard(board.ToArray(), clearPlayback: true);
-        StatusText = "Сгенерировано случайное решаемое поле.";
+        StatusText = hasFixedShuffleMoves
+            ? $"Сгенерировано случайное решаемое поле ({shuffleMoves} случайных ходов)."
+            : "Сгенерирована полностью случайная решаемая перестановка.";
     }
 
     public void ResetToSolved()
     {
-        var tiles = Enumerable.Range(1, Size * Size - 1)
+        var tiles = Enumerable.Range(1, BoardWidth * BoardHeight - 1)
             .Select(static x => (byte)x)
             .Append((byte)0)
             .ToArray();
@@ -260,6 +290,12 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         IsEditMode = snapshot.IsEditMode;
         StatusText = "Восстановлено предыдущее состояние поля.";
         UndoCommand.NotifyCanExecuteChanged();
+    }
+
+    public void ClearResults()
+    {
+        Results.Clear();
+        ClearResultsCommand.NotifyCanExecuteChanged();
     }
 
     public bool TryHandleTileClick(int tileIndex)
@@ -309,7 +345,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
 
         foreach (var tile in Tiles)
         {
-            tile.IsDragSource = tile.Index == tileIndex && tile.Value != 0;
+            tile.IsDragSource = tile.Index == tileIndex;
             tile.IsDragTarget = false;
         }
     }
@@ -349,11 +385,12 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
             try
             {
                 var snapshot = (byte[])_tiles.Clone();
-                var size = Size;
+                var width = BoardWidth;
+                var height = BoardHeight;
 
                 var benchmark = await Task.Run(() =>
                 {
-                    var board = new PuzzleBoard(snapshot, (byte)size, (byte)size);
+                    var board = new PuzzleBoard(snapshot, (byte)height, (byte)width);
                     var solver = CreateSolver(SelectedAlgorithm);
                     return _benchmarkService.Run(() => solver.Solve(board));
                 });
@@ -367,12 +404,13 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                     StatusText = benchmark.Result.IsSolved ? "Решено" : "Решение не найдено",
                     Elapsed = benchmark.Elapsed,
                     ManagedMemoryDeltaBytes = Math.Max(0, benchmark.ManagedMemoryDeltaBytes),
-                    WorkingSetDeltaBytes = Math.Max(0, benchmark.WorkingSetDeltaBytes),
+                    WorkingSetDeltaBytes = benchmark.WorkingSetDeltaBytes,
                     Steps = benchmark.Result.MoveCount,
                     Note = benchmark.Result.IsSolved
                         ? $"Маршрут загружен. Память (managed): {FormatHelper.FormatBytes(Math.Max(0, benchmark.ManagedMemoryDeltaBytes))}"
                         : "Решатель завершил работу без найденного маршрута."
                 });
+                ClearResultsCommand.NotifyCanExecuteChanged();
 
                 StatusText = benchmark.Result.IsSolved
                     ? "Решение загружено. Используйте кнопки шагов или стрелки клавиатуры для просмотра."
@@ -391,6 +429,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                     Steps = 0,
                     Note = ex.Message
                 });
+                ClearResultsCommand.NotifyCanExecuteChanged();
 
                 PlaybackStatus = PlaybackStatus.None;
                 StatusText = "Текущее поле некорректно или нерешаемо для выбранного размера.";
@@ -413,7 +452,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     private void ApplySolveResult(SolveResult result)
     {
         _solutionMoves = result.Moves;
-        _solutionStates = BuildSolutionStates(_tiles, result.Moves).ToList();
+        _solutionStates = BuildSolutionStates(_tiles, BoardHeight, BoardWidth, result.Moves).ToList();
         CurrentStepIndex = 0;
         PlaybackStatus = result.IsSolved ? PlaybackStatus.FollowingSolution : PlaybackStatus.None;
         BuildRoutePreview(result.Moves);
@@ -421,11 +460,10 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         StepBackwardCommand.NotifyCanExecuteChanged();
     }
 
-    private static IReadOnlyList<byte[]> BuildSolutionStates(byte[] initialBoard, IReadOnlyList<Direction> moves)
+    private static IReadOnlyList<byte[]> BuildSolutionStates(byte[] initialBoard, int height, int width, IReadOnlyList<Direction> moves)
     {
-        var size = (byte)Math.Sqrt(initialBoard.Length);
         var states = new List<byte[]> { (byte[])initialBoard.Clone() };
-        var temp = new PuzzleBoard((byte[])initialBoard.Clone(), size, size);
+        var temp = new PuzzleBoard((byte[])initialBoard.Clone(), (byte)height, (byte)width);
 
         foreach (var move in moves)
         {
@@ -518,15 +556,15 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     private bool CanMoveBlank(Direction direction)
     {
         var blankIndex = FindBlankIndex();
-        var row = blankIndex / Size;
-        var col = blankIndex % Size;
+        var row = blankIndex / BoardWidth;
+        var col = blankIndex % BoardWidth;
 
         return direction switch
         {
             Direction.Left => col > 0,
-            Direction.Right => col < Size - 1,
+            Direction.Right => col < BoardWidth - 1,
             Direction.Up => row > 0,
-            Direction.Down => row < Size - 1,
+            Direction.Down => row < BoardHeight - 1,
             _ => false
         };
     }
@@ -538,8 +576,8 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         {
             Direction.Left => blankIndex - 1,
             Direction.Right => blankIndex + 1,
-            Direction.Up => blankIndex - Size,
-            Direction.Down => blankIndex + Size,
+            Direction.Up => blankIndex - BoardWidth,
+            Direction.Down => blankIndex + BoardWidth,
             _ => blankIndex
         };
 
@@ -550,10 +588,10 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     private bool CanMoveTileIntoBlank(int tileIndex, out Direction direction)
     {
         var blankIndex = FindBlankIndex();
-        var blankRow = blankIndex / Size;
-        var blankCol = blankIndex % Size;
-        var tileRow = tileIndex / Size;
-        var tileCol = tileIndex % Size;
+        var blankRow = blankIndex / BoardWidth;
+        var blankCol = blankIndex % BoardWidth;
+        var tileRow = tileIndex / BoardWidth;
+        var tileCol = tileIndex % BoardWidth;
 
         direction = Direction.Left;
 
