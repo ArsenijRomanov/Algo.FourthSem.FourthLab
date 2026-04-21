@@ -383,6 +383,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             ApplySolution(board);
 
         var solvedSteps = Cells.Where(static c => c.PathIndex > 0).Count();
+        if (isSolved)
+            solvedSteps += 1;
 
         return new AlgorithmRunRecord
         {
