@@ -96,6 +96,50 @@ public class PuzzleBoardBuilder
         return result;
     }
 
+    public PuzzleBoard BuildRandomSolvableAtDistance(int distance)
+    {
+        if (distance < 0)
+            throw new ArgumentOutOfRangeException(nameof(distance));
+
+        if (distance == 0)
+            return BuildSolved();
+
+        const int maxAttempts = 128;
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            var board = BuildSolved();
+            var visited = new HashSet<PuzzleBoardKey> { board.GetKey() };
+            Direction? previousDirection = null;
+            var success = true;
+
+            for (var step = 0; step < distance; step++)
+            {
+                var candidates = GetDepthCandidates(board, previousDirection, visited);
+                if (candidates.Count == 0)
+                {
+                    success = false;
+                    break;
+                }
+
+                var chosen = candidates[_random.Next(candidates.Count)];
+                board.ApplyStep(chosen);
+                visited.Add(board.GetKey());
+                previousDirection = chosen;
+            }
+
+            if (!success)
+                continue;
+
+            if (!_allowGoal && board.IsGoal)
+                continue;
+
+            return board;
+        }
+
+        throw new InvalidOperationException($"Unable to generate a solvable board at distance {distance} from the goal.");
+    }
+
     private PuzzleBoard BuildRandomSolvableOneDimensional(int area)
     {
         var board = new byte[area];
@@ -171,6 +215,30 @@ public class PuzzleBoardBuilder
             throw new InvalidOperationException();
 
         (board[firstIndex], board[secondIndex]) = (board[secondIndex], board[firstIndex]);
+    }
+
+    private List<Direction> GetDepthCandidates(PuzzleBoard board, Direction? previousDirection, HashSet<PuzzleBoardKey> visited)
+    {
+        var candidates = new List<Direction>();
+        var oppositeDirection = previousDirection.HasValue
+            ? Helpers.DirectionHelper.GetOppositeDirection(previousDirection.Value)
+            : (Direction?)null;
+
+        foreach (var direction in board.GetValidSteps())
+        {
+            if (oppositeDirection.HasValue && direction == oppositeDirection.Value)
+                continue;
+
+            if (!board.TryMakeStep(direction, out var nextBoard) || nextBoard is null)
+                continue;
+
+            if (visited.Contains(nextBoard.GetKey()))
+                continue;
+
+            candidates.Add(direction);
+        }
+
+        return candidates;
     }
 
     private Direction GetRandomStep(PuzzleBoard board, Direction? previousDirection)

@@ -28,7 +28,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     private int _boardHeight = 4;
     private bool _isBusy;
     private bool _isEditMode;
-    private string _randomShuffleMovesText = "120";
+    private string _randomShuffleMovesText = "20";
     private PlaybackStatus _playbackStatus = PlaybackStatus.None;
     private string _statusText = "Готово.";
     private PuzzleAlgorithmKind _selectedAlgorithm = PuzzleAlgorithmKind.AStar;
@@ -253,15 +253,15 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
             .WithSize((byte)BoardHeight, (byte)BoardWidth)
             .AllowGoal(false);
 
-        var hasFixedShuffleMoves = int.TryParse(RandomShuffleMovesText, out var shuffleMoves) && shuffleMoves > 0;
-        var board = hasFixedShuffleMoves
-            ? builder.WithShuffleStepCount(shuffleMoves).BuildRandomSolvable()
+        var hasDepth = int.TryParse(RandomShuffleMovesText, out var depth) && depth > 0;
+        var board = hasDepth
+            ? builder.BuildRandomSolvableAtDistance(depth)
             : builder.BuildRandomSolvablePermutation();
 
         _undoStack.Clear();
         LoadBoard(board.ToArray(), clearPlayback: true);
-        StatusText = hasFixedShuffleMoves
-            ? $"Сгенерировано случайное решаемое поле ({shuffleMoves} случайных ходов)."
+        StatusText = hasDepth
+            ? $"Сгенерировано поле на глубине {depth} от целевого состояния."
             : "Сгенерирована полностью случайная решаемая перестановка.";
     }
 
