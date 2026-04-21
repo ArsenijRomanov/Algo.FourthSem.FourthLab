@@ -33,7 +33,7 @@ public partial class MainWindow : Window
         if (ViewModel is null || ViewModel.IsEditMode)
             return;
 
-        if (FocusManager.GetFocusedElement() is IVisual { } focused)
+        if (FocusManager.GetFocusedElement() is Visual focused)
         {
             if (focused.GetSelfAndVisualAncestors().OfType<ComboBoxItem>().Any()
                 || focused is ComboBox
