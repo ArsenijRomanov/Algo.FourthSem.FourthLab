@@ -6,9 +6,9 @@ using SlidingPuzzle.Core.Helpers;
 
 namespace SlidingPuzzle.Core.Solvers;
 
-public class DfsBackJumpSolver : ISolver
+public class IdaBackJumpSolver : ISolver
 {
-    private const int Found = -1;
+    private readonly record struct SearchResult(int NextBound, int JumpDepth, bool IsFound);
 
     public SolveResult Solve(PuzzleBoard board)
     {
@@ -18,38 +18,56 @@ public class DfsBackJumpSolver : ISolver
         var path = new List<Direction>();
         var pathVisited = new HashSet<PuzzleBoardKey> { workBoard.GetKey() };
 
-        var searchResult = Search(
-            workBoard,
-            null,
-            depth: 0,
-            lastChoiceDepth: 0,
-            pathVisited,
-            path);
+        var bound = workBoard.TotalManhattanDistance;
 
-        return searchResult == Found
-            ? new SolveResult(path.ToArray(), true)
-            : new SolveResult([], false);
+        while (true)
+        {
+            var searchResult = Search(
+                workBoard,
+                stepCount: 0,
+                bound,
+                previousDirection: null,
+                lastChoiceDepth: 0,
+                pathVisited,
+                path);
+
+            if (searchResult.IsFound)
+                return new SolveResult(path.ToArray(), true);
+
+            if (searchResult.NextBound == int.MaxValue)
+                return new SolveResult([], false);
+
+            bound = searchResult.NextBound;
+        }
     }
 
-    private static int Search(
+    private static SearchResult Search(
         PuzzleBoard board,
+        int stepCount,
+        int bound,
         Direction? previousDirection,
-        int depth,
         int lastChoiceDepth,
         HashSet<PuzzleBoardKey> pathVisited,
         List<Direction> path)
     {
+        var score = stepCount + board.TotalManhattanDistance;
+
+        if (score > bound)
+            return new SearchResult(score, lastChoiceDepth, false);
+
         if (board.IsGoal)
-            return Found;
+            return new SearchResult(stepCount, stepCount, true);
 
         var moves = GetAvailableMoves(board, previousDirection, pathVisited);
 
         if (moves.Count == 0)
-            return lastChoiceDepth;
+            return new SearchResult(int.MaxValue, lastChoiceDepth, false);
 
         var nextLastChoiceDepth = moves.Count > 1
-            ? depth
+            ? stepCount
             : lastChoiceDepth;
+
+        var minExceededScore = int.MaxValue;
 
         foreach (var dir in moves)
         {
@@ -61,24 +79,28 @@ public class DfsBackJumpSolver : ISolver
 
             var searchResult = Search(
                 board,
+                stepCount + 1,
+                bound,
                 dir,
-                depth + 1,
                 nextLastChoiceDepth,
                 pathVisited,
                 path);
 
-            if (searchResult == Found)
-                return Found;
+            if (searchResult.IsFound)
+                return searchResult;
+
+            if (searchResult.NextBound < minExceededScore)
+                minExceededScore = searchResult.NextBound;
 
             path.RemoveAt(path.Count - 1);
             pathVisited.Remove(key);
             board.UndoStep(dir);
 
-            if (searchResult < depth)
-                return searchResult;
+            if (searchResult.JumpDepth < stepCount)
+                return new SearchResult(minExceededScore, searchResult.JumpDepth, false);
         }
 
-        return lastChoiceDepth;
+        return new SearchResult(minExceededScore, lastChoiceDepth, false);
     }
 
     private static List<Direction> GetAvailableMoves(
@@ -106,8 +128,8 @@ public class DfsBackJumpSolver : ISolver
         moves.Sort((left, right) =>
         {
             var scoreComparison = left.score.CompareTo(right.score);
-            return scoreComparison != 0 
-                ? scoreComparison 
+            return scoreComparison != 0
+                ? scoreComparison
                 : left.dir.CompareTo(right.dir);
         });
 

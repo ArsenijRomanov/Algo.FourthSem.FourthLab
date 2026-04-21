@@ -42,7 +42,7 @@ public class Board
             }
         }
         
-        _matrix = matrix;
+        _matrix = (int[,])matrix.Clone();
         Start = start;
         Finish = finish;
         FreePlacesCount = freePlacesCount;
