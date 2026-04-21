@@ -1,0 +1,649 @@
+using global::Avalonia.Controls;
+using global::Avalonia.Media;
+using System.Collections.ObjectModel;
+using System.Text.Json;
+using SlidingPuzzle.Avalonia.Models;
+using SlidingPuzzle.Core.Abstractions;
+using SlidingPuzzle.Core.Builders;
+using SlidingPuzzle.Core.DataObjects;
+using SlidingPuzzle.Core.Domains;
+using SlidingPuzzle.Core.Enums;
+using SlidingPuzzle.Core.Helpers;
+using SlidingPuzzle.Core.Solvers;
+using SearchAlgorithms.UI.Shared.Helpers;
+using SearchAlgorithms.UI.Shared.Models;
+using SearchAlgorithms.UI.Shared.Mvvm;
+using SearchAlgorithms.UI.Shared.Services;
+
+namespace SlidingPuzzle.Avalonia.ViewModels;
+
+public sealed class SlidingPuzzleMainViewModel : ObservableObject
+{
+    private readonly BenchmarkService _benchmarkService;
+    private readonly FileStorageService _fileStorageService;
+    private readonly Stack<PuzzleUiSnapshot> _undoStack = [];
+    private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
+
+    private int _size = 4;
+    private bool _isBusy;
+    private bool _isEditMode;
+    private PlaybackStatus _playbackStatus = PlaybackStatus.None;
+    private string _statusText = "Ready.";
+    private PuzzleAlgorithmKind _selectedAlgorithm = PuzzleAlgorithmKind.AStar;
+    private IReadOnlyList<Direction>? _solutionMoves;
+    private List<byte[]>? _solutionStates;
+    private int _currentStepIndex;
+    private byte[] _tiles = [];
+
+    public SlidingPuzzleMainViewModel(BenchmarkService benchmarkService, FileStorageService fileStorageService)
+    {
+        _benchmarkService = benchmarkService;
+        _fileStorageService = fileStorageService;
+
+        Tiles = [];
+        Results = [];
+        RoutePreview = [];
+        AlgorithmOptions = Enum.GetValues<PuzzleAlgorithmKind>();
+
+        RandomizeCommand = new RelayCommand(RandomizeBoard);
+        ResetSolvedCommand = new RelayCommand(ResetToSolved);
+        UndoCommand = new RelayCommand(Undo, () => _undoStack.Count > 0);
+        RunCurrentCommand = new AsyncRelayCommand(RunCurrentAsync, () => !IsBusy);
+        StepForwardCommand = new RelayCommand(StepForward, () => CanStepForward);
+        StepBackwardCommand = new RelayCommand(StepBackward, () => CanStepBackward);
+        MoveUpCommand = new RelayCommand(() => TryManualMove(Direction.Up), () => !IsBusy && !IsEditMode);
+        MoveDownCommand = new RelayCommand(() => TryManualMove(Direction.Down), () => !IsBusy && !IsEditMode);
+        MoveLeftCommand = new RelayCommand(() => TryManualMove(Direction.Left), () => !IsBusy && !IsEditMode);
+        MoveRightCommand = new RelayCommand(() => TryManualMove(Direction.Right), () => !IsBusy && !IsEditMode);
+
+        ResetToSolved();
+    }
+
+    public ObservableCollection<PuzzleTileViewModel> Tiles { get; }
+    public ObservableCollection<AlgorithmRunRecord> Results { get; }
+    public ObservableCollection<MoveChipViewModel> RoutePreview { get; }
+    public PuzzleAlgorithmKind[] AlgorithmOptions { get; }
+
+    public RelayCommand RandomizeCommand { get; }
+    public RelayCommand ResetSolvedCommand { get; }
+    public RelayCommand UndoCommand { get; }
+    public AsyncRelayCommand RunCurrentCommand { get; }
+    public RelayCommand StepForwardCommand { get; }
+    public RelayCommand StepBackwardCommand { get; }
+    public RelayCommand MoveUpCommand { get; }
+    public RelayCommand MoveDownCommand { get; }
+    public RelayCommand MoveLeftCommand { get; }
+    public RelayCommand MoveRightCommand { get; }
+
+    public int Size
+    {
+        get => _size;
+        set
+        {
+            if (SetProperty(ref _size, Math.Clamp(value, 2, 6)))
+                ResetToSolved();
+        }
+    }
+
+    public bool IsBusy
+    {
+        get => _isBusy;
+        private set
+        {
+            if (SetProperty(ref _isBusy, value))
+            {
+                RunCurrentCommand.NotifyCanExecuteChanged();
+                MoveUpCommand.NotifyCanExecuteChanged();
+                MoveDownCommand.NotifyCanExecuteChanged();
+                MoveLeftCommand.NotifyCanExecuteChanged();
+                MoveRightCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool IsEditMode
+    {
+        get => _isEditMode;
+        set
+        {
+            if (SetProperty(ref _isEditMode, value))
+            {
+                OnPropertyChanged(nameof(InteractionModeText));
+                MoveUpCommand.NotifyCanExecuteChanged();
+                MoveDownCommand.NotifyCanExecuteChanged();
+                MoveLeftCommand.NotifyCanExecuteChanged();
+                MoveRightCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public string InteractionModeText => IsEditMode ? "Edit mode" : "Play mode";
+
+    public PuzzleAlgorithmKind SelectedAlgorithm
+    {
+        get => _selectedAlgorithm;
+        set => SetProperty(ref _selectedAlgorithm, value);
+    }
+
+    public PlaybackStatus PlaybackStatus
+    {
+        get => _playbackStatus;
+        private set
+        {
+            if (SetProperty(ref _playbackStatus, value))
+            {
+                OnPropertyChanged(nameof(PlaybackStatusText));
+                OnPropertyChanged(nameof(PlaybackBackgroundBrush));
+                OnPropertyChanged(nameof(PlaybackBorderBrush));
+                StepForwardCommand.NotifyCanExecuteChanged();
+                StepBackwardCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public string PlaybackStatusText => FormatHelper.PlaybackStatusText(PlaybackStatus);
+
+    public IBrush PlaybackBackgroundBrush => PlaybackStatus switch
+    {
+        PlaybackStatus.FollowingSolution => new SolidColorBrush(Color.Parse("#153147")),
+        PlaybackStatus.Diverged => new SolidColorBrush(Color.Parse("#3A2914")),
+        PlaybackStatus.ManualEdit => new SolidColorBrush(Color.Parse("#30274A")),
+        _ => new SolidColorBrush(Color.Parse("#252C39"))
+    };
+
+    public IBrush PlaybackBorderBrush => PlaybackStatus switch
+    {
+        PlaybackStatus.FollowingSolution => new SolidColorBrush(Color.Parse("#2B5E88")),
+        PlaybackStatus.Diverged => new SolidColorBrush(Color.Parse("#9C6A21")),
+        PlaybackStatus.ManualEdit => new SolidColorBrush(Color.Parse("#6C56B5")),
+        _ => new SolidColorBrush(Color.Parse("#3B4558"))
+    };
+
+    public string StatusText
+    {
+        get => _statusText;
+        set => SetProperty(ref _statusText, value);
+    }
+
+    public int CurrentStepIndex
+    {
+        get => _currentStepIndex;
+        private set
+        {
+            if (SetProperty(ref _currentStepIndex, value))
+            {
+                OnPropertyChanged(nameof(ProgressText));
+                UpdateRoutePreview();
+                StepForwardCommand.NotifyCanExecuteChanged();
+                StepBackwardCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public string ProgressText => _solutionMoves is null
+        ? "No route"
+        : $"Step {CurrentStepIndex}/{_solutionMoves.Count}";
+
+    public bool CanStepForward =>
+        PlaybackStatus == PlaybackStatus.FollowingSolution &&
+        _solutionMoves is not null &&
+        CurrentStepIndex < _solutionMoves.Count;
+
+    public bool CanStepBackward =>
+        PlaybackStatus == PlaybackStatus.FollowingSolution &&
+        CurrentStepIndex > 0;
+
+    public async Task ImportBoardAsync(Window owner)
+    {
+        var text = await _fileStorageService.PickAndReadTextAsync(owner, "Import puzzle board", "json");
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        var dto = JsonSerializer.Deserialize<PuzzleBoardFileDto>(text, _jsonOptions);
+        if (dto?.Tiles is null || dto.Tiles.Length == 0)
+            return;
+
+        Size = dto.Size;
+        _undoStack.Clear();
+        LoadBoard(dto.Tiles, clearPlayback: true);
+        StatusText = "Board imported.";
+    }
+
+    public async Task ExportBoardAsync(Window owner)
+    {
+        var dto = new PuzzleBoardFileDto
+        {
+            Size = Size,
+            Tiles = (byte[])_tiles.Clone()
+        };
+
+        var text = JsonSerializer.Serialize(dto, _jsonOptions);
+        await _fileStorageService.SaveTextAsync(owner, "Export puzzle board", "sliding-puzzle-board", ".json", text);
+        StatusText = "Board exported.";
+    }
+
+    public void RandomizeBoard()
+    {
+        var builder = new PuzzleBoardBuilder()
+            .WithSize((byte)Size, (byte)Size)
+            .WithShuffleStepCount(120)
+            .AllowGoal(false);
+
+        var board = builder.BuildRandomSolvablePermutation();
+        _undoStack.Clear();
+        LoadBoard(board.ToArray(), clearPlayback: true);
+        StatusText = "Random solvable board generated.";
+    }
+
+    public void ResetToSolved()
+    {
+        var tiles = Enumerable.Range(1, Size * Size - 1)
+            .Select(static x => (byte)x)
+            .Append((byte)0)
+            .ToArray();
+
+        _undoStack.Clear();
+        LoadBoard(tiles, clearPlayback: true);
+        StatusText = "Solved layout loaded.";
+    }
+
+    public void Undo()
+    {
+        if (_undoStack.Count == 0)
+            return;
+
+        var snapshot = _undoStack.Pop();
+        _tiles = (byte[])snapshot.Tiles.Clone();
+        RefreshTiles();
+        PlaybackStatus = snapshot.PlaybackStatus;
+        CurrentStepIndex = snapshot.CurrentStepIndex;
+        IsEditMode = snapshot.IsEditMode;
+        StatusText = "Undo restored the previous board state.";
+        UndoCommand.NotifyCanExecuteChanged();
+    }
+
+    public bool TryHandleTileClick(int tileIndex)
+    {
+        if (IsEditMode)
+            return false;
+
+        if (!CanMoveTileIntoBlank(tileIndex, out var direction))
+            return false;
+
+        PushUndoSnapshot();
+        ApplyBlankMove(direction);
+        SyncPlaybackAfterManualMove(direction);
+        StatusText = "Manual move applied.";
+        return true;
+    }
+
+    public bool TrySwapTiles(int sourceIndex, int targetIndex)
+    {
+        if (!IsEditMode || sourceIndex == targetIndex)
+            return false;
+
+        PushUndoSnapshot();
+        (_tiles[sourceIndex], _tiles[targetIndex]) = (_tiles[targetIndex], _tiles[sourceIndex]);
+        RefreshTiles();
+        PlaybackStatus = PlaybackStatus.ManualEdit;
+        StatusText = "Tiles swapped in edit mode.";
+        return true;
+    }
+
+    public bool TryManualMove(Direction direction)
+    {
+        if (!CanMoveBlank(direction))
+            return false;
+
+        PushUndoSnapshot();
+        ApplyBlankMove(direction);
+        SyncPlaybackAfterManualMove(direction);
+        StatusText = "Blank tile moved manually.";
+        return true;
+    }
+
+    public void BeginDrag(int tileIndex)
+    {
+        if (!IsEditMode)
+            return;
+
+        foreach (var tile in Tiles)
+        {
+            tile.IsDragSource = tile.Index == tileIndex && tile.Value != 0;
+            tile.IsDragTarget = false;
+        }
+    }
+
+    public void UpdateDragTarget(int tileIndex)
+    {
+        if (!IsEditMode)
+            return;
+
+        foreach (var tile in Tiles)
+            tile.IsDragTarget = tile.Index == tileIndex;
+    }
+
+    public void ClearDragVisuals()
+    {
+        foreach (var tile in Tiles)
+        {
+            tile.IsDragSource = false;
+            tile.IsDragTarget = false;
+        }
+    }
+
+    private async Task RunCurrentAsync()
+    {
+        IsBusy = true;
+
+        try
+        {
+            var title = SelectedAlgorithm switch
+            {
+                PuzzleAlgorithmKind.Bfs => "BFS",
+                PuzzleAlgorithmKind.AStar => "A*",
+                PuzzleAlgorithmKind.IdaStar => "IDA*",
+                _ => "IDA* + Backjumping"
+            };
+
+            try
+            {
+                var snapshot = (byte[])_tiles.Clone();
+                var size = Size;
+
+                var benchmark = await Task.Run(() =>
+                {
+                    var board = new PuzzleBoard(snapshot, (byte)size, (byte)size);
+                    var solver = CreateSolver(SelectedAlgorithm);
+                    return _benchmarkService.Run(() => solver.Solve(board));
+                });
+
+                ApplySolveResult(benchmark.Result);
+
+                Results.Insert(0, new AlgorithmRunRecord
+                {
+                    Title = title,
+                    IsSuccess = benchmark.Result.IsSolved,
+                    StatusText = benchmark.Result.IsSolved ? "Solved" : "No solution",
+                    Elapsed = benchmark.Elapsed,
+                    ManagedMemoryDeltaBytes = benchmark.ManagedMemoryDeltaBytes,
+                    WorkingSetDeltaBytes = benchmark.WorkingSetDeltaBytes,
+                    Steps = benchmark.Result.MoveCount,
+                    Note = benchmark.Result.IsSolved
+                        ? $"Route loaded. Managed: {FormatHelper.FormatBytes(benchmark.ManagedMemoryDeltaBytes)}"
+                        : "Solver finished without finding a route."
+                });
+
+                StatusText = benchmark.Result.IsSolved
+                    ? "Solution loaded. Use Prev/Next or keyboard arrows to inspect it."
+                    : "No solution found.";
+            }
+            catch (Exception ex)
+            {
+                Results.Insert(0, new AlgorithmRunRecord
+                {
+                    Title = title,
+                    IsSuccess = false,
+                    StatusText = "Invalid or unsolvable board",
+                    Elapsed = TimeSpan.Zero,
+                    ManagedMemoryDeltaBytes = 0,
+                    WorkingSetDeltaBytes = 0,
+                    Steps = 0,
+                    Note = ex.Message
+                });
+
+                PlaybackStatus = PlaybackStatus.None;
+                StatusText = "The current board is invalid or unsolvable for the selected size.";
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private ISolver CreateSolver(PuzzleAlgorithmKind algorithm) => algorithm switch
+    {
+        PuzzleAlgorithmKind.Bfs => new BfsSolver(),
+        PuzzleAlgorithmKind.AStar => new AStarSolver(),
+        PuzzleAlgorithmKind.IdaStar => new IdaSolver(),
+        _ => new IdaBackJumpSolver()
+    };
+
+    private void ApplySolveResult(SolveResult result)
+    {
+        _solutionMoves = result.Moves;
+        _solutionStates = BuildSolutionStates(_tiles, result.Moves).ToList();
+        CurrentStepIndex = 0;
+        PlaybackStatus = result.IsSolved ? PlaybackStatus.FollowingSolution : PlaybackStatus.None;
+        BuildRoutePreview(result.Moves);
+        StepForwardCommand.NotifyCanExecuteChanged();
+        StepBackwardCommand.NotifyCanExecuteChanged();
+    }
+
+    private static IReadOnlyList<byte[]> BuildSolutionStates(byte[] initialBoard, IReadOnlyList<Direction> moves)
+    {
+        var size = (byte)Math.Sqrt(initialBoard.Length);
+        var states = new List<byte[]> { (byte[])initialBoard.Clone() };
+        var temp = new PuzzleBoard((byte[])initialBoard.Clone(), size, size);
+
+        foreach (var move in moves)
+        {
+            temp.ApplyStep(move);
+            states.Add(temp.ToArray());
+        }
+
+        return states;
+    }
+
+    private void BuildRoutePreview(IReadOnlyList<Direction> moves)
+    {
+        RoutePreview.Clear();
+
+        for (var i = 0; i < moves.Count; i++)
+        {
+            RoutePreview.Add(new MoveChipViewModel
+            {
+                StepIndex = i,
+                Text = moves[i].ToString(),
+                IsActive = i == 0
+            });
+        }
+    }
+
+    private void UpdateRoutePreview()
+    {
+        for (var i = 0; i < RoutePreview.Count; i++)
+            RoutePreview[i].IsActive = i == CurrentStepIndex;
+    }
+
+    private void StepForward()
+    {
+        if (_solutionMoves is null || CurrentStepIndex >= _solutionMoves.Count)
+            return;
+
+        PushUndoSnapshot();
+        ApplyBlankMove(_solutionMoves[CurrentStepIndex]);
+        CurrentStepIndex++;
+        PlaybackStatus = PlaybackStatus.FollowingSolution;
+        StatusText = "Moved to the next step of the route.";
+    }
+
+    private void StepBackward()
+    {
+        if (_solutionMoves is null || CurrentStepIndex == 0)
+            return;
+
+        PushUndoSnapshot();
+        CurrentStepIndex--;
+        _tiles = (byte[])_solutionStates![CurrentStepIndex].Clone();
+        RefreshTiles();
+        PlaybackStatus = PlaybackStatus.FollowingSolution;
+        StatusText = "Moved to the previous step of the route.";
+    }
+
+    private void SyncPlaybackAfterManualMove(Direction move)
+    {
+        if (_solutionMoves is null || _solutionStates is null)
+        {
+            PlaybackStatus = PlaybackStatus.None;
+            return;
+        }
+
+        var nextIndex = CurrentStepIndex < _solutionMoves.Count && _solutionMoves[CurrentStepIndex] == move
+            ? CurrentStepIndex + 1
+            : -1;
+
+        if (nextIndex != -1 && BoardsEqual(_tiles, _solutionStates[nextIndex]))
+        {
+            CurrentStepIndex = nextIndex;
+            PlaybackStatus = PlaybackStatus.FollowingSolution;
+            return;
+        }
+
+        if (CurrentStepIndex > 0)
+        {
+            var prevDirection = DirectionHelper.GetOppositeDirection(_solutionMoves[CurrentStepIndex - 1]);
+            if (prevDirection == move && BoardsEqual(_tiles, _solutionStates[CurrentStepIndex - 1]))
+            {
+                CurrentStepIndex -= 1;
+                PlaybackStatus = PlaybackStatus.FollowingSolution;
+                return;
+            }
+        }
+
+        PlaybackStatus = PlaybackStatus.Diverged;
+    }
+
+    private bool CanMoveBlank(Direction direction)
+    {
+        var blankIndex = FindBlankIndex();
+        var row = blankIndex / Size;
+        var col = blankIndex % Size;
+
+        return direction switch
+        {
+            Direction.Left => col > 0,
+            Direction.Right => col < Size - 1,
+            Direction.Up => row > 0,
+            Direction.Down => row < Size - 1,
+            _ => false
+        };
+    }
+
+    private void ApplyBlankMove(Direction direction)
+    {
+        var blankIndex = FindBlankIndex();
+        var targetIndex = direction switch
+        {
+            Direction.Left => blankIndex - 1,
+            Direction.Right => blankIndex + 1,
+            Direction.Up => blankIndex - Size,
+            Direction.Down => blankIndex + Size,
+            _ => blankIndex
+        };
+
+        (_tiles[blankIndex], _tiles[targetIndex]) = (_tiles[targetIndex], _tiles[blankIndex]);
+        RefreshTiles();
+    }
+
+    private bool CanMoveTileIntoBlank(int tileIndex, out Direction direction)
+    {
+        var blankIndex = FindBlankIndex();
+        var blankRow = blankIndex / Size;
+        var blankCol = blankIndex % Size;
+        var tileRow = tileIndex / Size;
+        var tileCol = tileIndex % Size;
+
+        direction = Direction.Left;
+
+        if (tileRow == blankRow && tileCol == blankCol + 1)
+        {
+            direction = Direction.Right;
+            return true;
+        }
+
+        if (tileRow == blankRow && tileCol == blankCol - 1)
+        {
+            direction = Direction.Left;
+            return true;
+        }
+
+        if (tileCol == blankCol && tileRow == blankRow + 1)
+        {
+            direction = Direction.Down;
+            return true;
+        }
+
+        if (tileCol == blankCol && tileRow == blankRow - 1)
+        {
+            direction = Direction.Up;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void LoadBoard(byte[] tiles, bool clearPlayback)
+    {
+        _tiles = (byte[])tiles.Clone();
+        RefreshTiles();
+
+        if (clearPlayback)
+        {
+            _solutionMoves = null;
+            _solutionStates = null;
+            PlaybackStatus = PlaybackStatus.None;
+            CurrentStepIndex = 0;
+            RoutePreview.Clear();
+        }
+
+        UndoCommand.NotifyCanExecuteChanged();
+    }
+
+    private void RefreshTiles()
+    {
+        Tiles.Clear();
+        for (var i = 0; i < _tiles.Length; i++)
+            Tiles.Add(new PuzzleTileViewModel(i, _tiles[i]));
+    }
+
+    private int FindBlankIndex()
+    {
+        for (var i = 0; i < _tiles.Length; i++)
+        {
+            if (_tiles[i] == 0)
+                return i;
+        }
+
+        throw new InvalidOperationException("Blank tile not found.");
+    }
+
+    private void PushUndoSnapshot()
+    {
+        _undoStack.Push(new PuzzleUiSnapshot
+        {
+            Tiles = (byte[])_tiles.Clone(),
+            PlaybackStatus = PlaybackStatus,
+            CurrentStepIndex = CurrentStepIndex,
+            HasSolution = _solutionMoves is not null,
+            IsEditMode = IsEditMode
+        });
+
+        UndoCommand.NotifyCanExecuteChanged();
+    }
+
+    private static bool BoardsEqual(byte[] left, byte[] right)
+    {
+        if (left.Length != right.Length)
+            return false;
+
+        for (var i = 0; i < left.Length; i++)
+        {
+            if (left[i] != right[i])
+                return false;
+        }
+
+        return true;
+    }
+}

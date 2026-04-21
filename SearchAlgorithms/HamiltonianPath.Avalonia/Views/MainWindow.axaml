@@ -1,0 +1,104 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:HamiltonianPath.Avalonia.Views.Controls"
+        xmlns:local="clr-namespace:HamiltonianPath.Avalonia.Converters"
+        x:Class="HamiltonianPath.Avalonia.Views.MainWindow"
+        Title="Hamiltonian Path Lab"
+        Width="1440"
+        Height="920"
+        MinWidth="1180"
+        MinHeight="760">
+  <Grid ColumnDefinitions="380,18,*" Margin="18">
+    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="16">
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="section-title" Text="Board configuration" />
+            <TextBlock Classes="caption" Text="Set size, pick tools, place start and finish, then paint walls on the grid." />
+            <Grid ColumnDefinitions="*,*">
+              <StackPanel Margin="0,0,5,0">
+                <TextBlock Classes="caption" Text="Width" />
+                <NumericUpDown Minimum="2" Maximum="20" Value="{Binding BoardWidth}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Margin="5,0,0,0">
+                <TextBlock Classes="caption" Text="Height" />
+                <NumericUpDown Minimum="2" Maximum="20" Value="{Binding BoardHeight}" />
+              </StackPanel>
+            </Grid>
+            <WrapPanel ItemHeight="40" ItemWidth="0" Orientation="Horizontal">
+              <Button Classes="secondary-action" Content="Apply size" Command="{Binding ResizeBoardCommand}" />
+              <Button Classes="secondary-action" Content="Clear walls" Command="{Binding ClearWallsCommand}" />
+              <Button Classes="secondary-action" Content="Clear endpoints" Command="{Binding ClearEndpointsCommand}" />
+              <Button Classes="secondary-action" Content="Clear all" Command="{Binding ClearAllCommand}" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="section-title" Text="Editing tools" />
+            <TextBlock Classes="caption" Text="For repeated click on the start cell the start and finish are both cleared." />
+            <WrapPanel Orientation="Horizontal" ItemHeight="40">
+              <Button Classes="toolbar-chip" Content="Start" Click="StartToolButton_Click" />
+              <Button Classes="toolbar-chip" Content="Finish" Click="FinishToolButton_Click" />
+              <Button Classes="toolbar-chip" Content="Walls" Click="WallToolButton_Click" />
+              <Button Classes="toolbar-chip" Content="Erase" Click="EraseToolButton_Click" />
+            </WrapPanel>
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Classes="caption" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Classes="section-title" Text="Solver configuration" />
+            <CheckBox Content="Warnsdorff heuristic" IsChecked="{Binding UseWarnsdorff}" />
+            <CheckBox Content="Connectivity pruning" IsChecked="{Binding UseConnectivity}" />
+            <CheckBox Content="Backjumping" IsChecked="{Binding UseBackjumping}" />
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="primary-action" Content="Run current" Command="{Binding RunCurrentCommand}" />
+              <Button Classes="secondary-action" Content="Run baseline + current" Command="{Binding RunBaselineAndCurrentCommand}" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="section-title" Text="Results" />
+            <ItemsControl ItemsSource="{Binding Results}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="result-item">
+                    <StackPanel Spacing="8">
+                      <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="{Binding Title}" FontWeight="SemiBold" />
+                        <TextBlock DockPanel.Dock="Right" Classes="caption" Text="{Binding ExecutedAt, StringFormat='{}{0:HH:mm:ss}'}" />
+                      </DockPanel>
+                      <TextBlock Text="{Binding StatusText}" />
+                      <WrapPanel>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}{0:0.##} ms'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding WorkingSetDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}steps: {0}'}" /></Border>
+                      </WrapPanel>
+                      <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Note}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Column="2" RowDefinitions="Auto,14,*">
+      <Border Classes="card" Padding="16">
+        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <TextBlock Classes="section-title" Text="Grid" />
+          <TextBlock Classes="caption" Text="Responsive fit board. No free panning in v1 to keep interaction simple and stable." />
+        </StackPanel>
+      </Border>
+      <controls:HamiltonianBoardView Grid.Row="2" />
+    </Grid>
+  </Grid>
+</Window>

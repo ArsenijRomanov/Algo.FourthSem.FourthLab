@@ -1,0 +1,137 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Styles.Resources>
+    <Color x:Key="WindowBgColor">#12141A</Color>
+    <Color x:Key="PanelBgColor">#171A22</Color>
+    <Color x:Key="CardBgColor">#1C202A</Color>
+    <Color x:Key="BorderColor">#2A3140</Color>
+    <Color x:Key="SoftTextColor">#A4ADBC</Color>
+    <Color x:Key="AccentColor">#67A7FF</Color>
+    <Color x:Key="SuccessColor">#39C98A</Color>
+    <Color x:Key="DangerColor">#FF6D7A</Color>
+    <Color x:Key="WarningColor">#FFB347</Color>
+    <Color x:Key="PathColor">#8E86FF</Color>
+    <Color x:Key="WallColor">#2A2E38</Color>
+    <Color x:Key="BlankColor">#222733</Color>
+
+    <SolidColorBrush x:Key="WindowBgBrush" Color="{StaticResource WindowBgColor}" />
+    <SolidColorBrush x:Key="PanelBgBrush" Color="{StaticResource PanelBgColor}" />
+    <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBgColor}" />
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
+    <SolidColorBrush x:Key="SoftTextBrush" Color="{StaticResource SoftTextColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+    <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+    <SolidColorBrush x:Key="PathBrush" Color="{StaticResource PathColor}" />
+    <SolidColorBrush x:Key="WallBrush" Color="{StaticResource WallColor}" />
+    <SolidColorBrush x:Key="BlankBrush" Color="{StaticResource BlankColor}" />
+  </Styles.Resources>
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{StaticResource WindowBgBrush}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
+  <Style Selector="TextBlock.caption">
+    <Setter Property="Foreground" Value="{StaticResource SoftTextBrush}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <Style Selector="TextBlock.section-title">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="FontSize" Value="17" />
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{StaticResource CardBgBrush}" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="14" />
+  </Style>
+
+  <Style Selector="Border.board-surface">
+    <Setter Property="Background" Value="#11151E" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+
+  <Style Selector="Button.toolbar-chip">
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="Background" Value="#242A37" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="Button.primary-action">
+    <Setter Property="Padding" Value="14,10" />
+    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+    <Setter Property="Foreground" Value="#0C1320" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="Button.secondary-action">
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="Background" Value="#242A37" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="ToggleSwitch.mode-toggle">
+    <Setter Property="Margin" Value="0,6,0,0" />
+  </Style>
+
+  <Style Selector="Border.result-item">
+    <Setter Property="Background" Value="#181D27" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="10" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+  </Style>
+
+  <Style Selector="Border.metric-badge">
+    <Setter Property="Background" Value="#252C39" />
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Padding" Value="10,4" />
+  </Style>
+
+  <Style Selector="Border.status-following">
+    <Setter Property="Background" Value="#153147" />
+    <Setter Property="BorderBrush" Value="#2B5E88" />
+  </Style>
+
+  <Style Selector="Border.status-diverged">
+    <Setter Property="Background" Value="#3A2914" />
+    <Setter Property="BorderBrush" Value="#9C6A21" />
+  </Style>
+
+  <Style Selector="Border.status-manual">
+    <Setter Property="Background" Value="#30274A" />
+    <Setter Property="BorderBrush" Value="#6C56B5" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="#212633" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="#212633" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+  </Style>
+
+  <Style Selector="NumericUpDown">
+    <Setter Property="Background" Value="#212633" />
+    <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+  </Style>
+
+  <Style Selector="CheckBox">
+    <Setter Property="Margin" Value="0,6,0,0" />
+  </Style>
+</Styles>

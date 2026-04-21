@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:SlidingPuzzle.Avalonia.ViewModels"
+             xmlns:local="clr-namespace:SlidingPuzzle.Avalonia.Converters"
+             x:Class="SlidingPuzzle.Avalonia.Views.Controls.SlidingPuzzleBoardView">
+  <Border Classes="board-surface">
+    <ItemsControl ItemsSource="{Binding Tiles}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Rows="{Binding $parent[ItemsControl].DataContext.Size}" Columns="{Binding $parent[ItemsControl].DataContext.Size}" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Border Margin="5"
+                  Background="{Binding BackgroundBrush}"
+                  BorderBrush="{Binding BorderBrush}"
+                  BorderThickness="{Binding BorderThicknessValue}"
+                  CornerRadius="14"
+                  Tag="{Binding}"
+                  PointerPressed="Tile_PointerPressed"
+                  PointerEntered="Tile_PointerEntered"
+                  PointerReleased="Tile_PointerReleased">
+            <Border.RenderTransform>
+              <ScaleTransform ScaleX="{Binding ScaleFactor}" ScaleY="{Binding ScaleFactor}" />
+            </Border.RenderTransform>
+            <Border.BoxShadow>0 8 18 0 #38000000</Border.BoxShadow>
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="RenderTransform.(ScaleTransform.ScaleX)" Duration="0:0:0.14" />
+                <DoubleTransition Property="RenderTransform.(ScaleTransform.ScaleY)" Duration="0:0:0.14" />
+              </Transitions>
+            </Border.Transitions>
+            <Grid>
+              <TextBlock Text="{Binding Text}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         FontWeight="Bold"
+                         FontSize="24"
+                         Opacity="{Binding IsBlank, Converter={x:Static local:BooleanToOpacityConverter.Instance}}" />
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </Border>
+</UserControl>

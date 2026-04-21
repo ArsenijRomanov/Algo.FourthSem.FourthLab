@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:HamiltonianPath.Avalonia.ViewModels"
+             x:Class="HamiltonianPath.Avalonia.Views.Controls.HamiltonianBoardView">
+  <Border Classes="board-surface">
+    <ItemsControl ItemsSource="{Binding Cells}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Rows="{Binding $parent[ItemsControl].DataContext.BoardHeight}" Columns="{Binding $parent[ItemsControl].DataContext.BoardWidth}" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Border Background="{Binding BackgroundBrush}"
+                  BorderBrush="{Binding BorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Margin="4"
+                  Tag="{Binding}">
+            <Border.Transitions>
+              <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+              </Transitions>
+            </Border.Transitions>
+            <Grid PointerPressed="Cell_PointerPressed"
+                  PointerEntered="Cell_PointerEntered"
+                  PointerReleased="Cell_PointerReleased">
+              <TextBlock Text="{Binding DisplayText}"
+                         Foreground="{Binding ForegroundBrush}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         FontWeight="SemiBold"
+                         FontSize="16" />
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </Border>
+</UserControl>
