@@ -23,7 +23,8 @@
                 <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
               </Transitions>
             </Border.Transitions>
-            <Grid PointerPressed="Cell_PointerPressed"
+            <Grid Background="Transparent"
+                  PointerPressed="Cell_PointerPressed"
                   PointerEntered="Cell_PointerEntered"
                   PointerReleased="Cell_PointerReleased">
               <TextBlock Text="{Binding DisplayText}"

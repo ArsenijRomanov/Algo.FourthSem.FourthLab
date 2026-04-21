@@ -75,14 +75,14 @@ public sealed class HamiltonianBoardCellViewModel : ObservableObject
             BackgroundBrush = new SolidColorBrush(Color.Parse("#1E5D46"));
             BorderBrush = new SolidColorBrush(Color.Parse("#39C98A"));
             ForegroundBrush = Brushes.White;
-            DisplayText = "S";
+            DisplayText = "С";
         }
         else if (IsFinish)
         {
             BackgroundBrush = new SolidColorBrush(Color.Parse("#5A2332"));
             BorderBrush = new SolidColorBrush(Color.Parse("#FF6D7A"));
             ForegroundBrush = Brushes.White;
-            DisplayText = "F";
+            DisplayText = "Ф";
         }
         else if (IsWall)
         {

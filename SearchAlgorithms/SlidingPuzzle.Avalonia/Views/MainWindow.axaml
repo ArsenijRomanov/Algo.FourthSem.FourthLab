@@ -3,7 +3,7 @@
         xmlns:controls="clr-namespace:SlidingPuzzle.Avalonia.Views.Controls"
         xmlns:local="clr-namespace:SlidingPuzzle.Avalonia.Converters"
         x:Class="SlidingPuzzle.Avalonia.Views.MainWindow"
-        Title="Sliding Puzzle Lab"
+        Title="Лабораторная: пятнашки"
         Width="1480"
         Height="940"
         MinWidth="1220"
@@ -14,40 +14,40 @@
       <StackPanel Spacing="16">
         <Border Classes="card">
           <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="Board configuration" />
-            <TextBlock Classes="caption" Text="The right panel stays fit-to-view in v1. No free panning is needed for 4×4 and similar sizes." />
+            <TextBlock Classes="section-title" Text="Настройка поля" />
+            <TextBlock Classes="caption" Text="Правое поле автоматически подстраивается под размер окна." />
             <StackPanel>
-              <TextBlock Classes="caption" Text="Size" />
+              <TextBlock Classes="caption" Text="Размер" />
               <NumericUpDown Minimum="2" Maximum="6" Value="{Binding Size}" />
             </StackPanel>
             <WrapPanel>
-              <Button Classes="secondary-action" Content="Random" Command="{Binding RandomizeCommand}" />
-              <Button Classes="secondary-action" Content="Solved" Command="{Binding ResetSolvedCommand}" />
-              <Button Classes="secondary-action" Content="Import" Click="ImportButton_Click" />
-              <Button Classes="secondary-action" Content="Export" Click="ExportButton_Click" />
-              <Button Classes="secondary-action" Content="Undo" Command="{Binding UndoCommand}" />
+              <Button Classes="secondary-action" Content="Случайно" Command="{Binding RandomizeCommand}" />
+              <Button Classes="secondary-action" Content="Собранная" Command="{Binding ResetSolvedCommand}" />
+              <Button Classes="secondary-action" Content="Импорт" Click="ImportButton_Click" />
+              <Button Classes="secondary-action" Content="Экспорт" Click="ExportButton_Click" />
+              <Button Classes="secondary-action" Content="Отменить" Command="{Binding UndoCommand}" />
             </WrapPanel>
             <StackPanel Spacing="6">
-              <TextBlock Classes="caption" Text="Edit mode" />
+              <TextBlock Classes="caption" Text="Режим редактирования" />
               <ToggleSwitch Classes="mode-toggle" IsChecked="{Binding IsEditMode}" />
             </StackPanel>
-            <TextBlock Classes="caption" Text="In play mode arrows and neighbour clicks move the blank tile. In edit mode drag any tile to swap positions." />
+            <TextBlock Classes="caption" Text="В игровом режиме стрелки и клики по соседям двигают пустую клетку. В режиме редактирования можно менять местами любые плитки перетаскиванием." />
           </StackPanel>
         </Border>
 
         <Border Classes="card">
           <StackPanel Spacing="8">
-            <TextBlock Classes="section-title" Text="Algorithm" />
+            <TextBlock Classes="section-title" Text="Алгоритм" />
             <ComboBox SelectedItem="{Binding SelectedAlgorithm}" ItemsSource="{Binding AlgorithmOptions}" />
             <WrapPanel>
-              <Button Classes="primary-action" Content="Solve current board" Command="{Binding RunCurrentCommand}" />
+              <Button Classes="primary-action solve-action" Content="Решить текущее поле" Command="{Binding RunCurrentCommand}" />
             </WrapPanel>
           </StackPanel>
         </Border>
 
         <Border Classes="card">
           <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="Playback and manual control" />
+            <TextBlock Classes="section-title" Text="Проигрывание и ручное управление" />
             <Border Classes="metric-badge"
                     Background="{Binding PlaybackBackgroundBrush}"
                     BorderBrush="{Binding PlaybackBorderBrush}"
@@ -57,8 +57,8 @@
             <TextBlock Classes="caption" Text="{Binding StatusText}" TextWrapping="Wrap" />
             <TextBlock Classes="caption" Text="{Binding ProgressText}" />
             <WrapPanel>
-              <Button Classes="secondary-action" Content="Prev step" Command="{Binding StepBackwardCommand}" />
-              <Button Classes="secondary-action" Content="Next step" Command="{Binding StepForwardCommand}" />
+              <Button Classes="secondary-action" Content="Пред. шаг" Command="{Binding StepBackwardCommand}" />
+              <Button Classes="secondary-action" Content="След. шаг" Command="{Binding StepForwardCommand}" />
             </WrapPanel>
             <Grid ColumnDefinitions="60,60,60" RowDefinitions="60,60,60" HorizontalAlignment="Center">
               <Button Grid.Column="1" Grid.Row="0" Classes="toolbar-chip" Content="↑" Command="{Binding MoveUpCommand}" />
@@ -71,7 +71,7 @@
 
         <Border Classes="card">
           <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="Results" />
+            <TextBlock Classes="section-title" Text="Результаты" />
             <ItemsControl ItemsSource="{Binding Results}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
@@ -82,7 +82,7 @@
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}{0:0.##} ms'}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding WorkingSetDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}}" /></Border>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}moves: {0}'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}ходов: {0}'}" /></Border>
                       </WrapPanel>
                       <TextBlock Text="{Binding StatusText}" />
                       <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Note}" />
@@ -98,9 +98,9 @@
 
     <Grid Grid.Column="2" RowDefinitions="*,16,Auto">
       <controls:SlidingPuzzleBoardView />
-      <Expander Grid.Row="2" IsExpanded="True">
+      <Expander Grid.Row="2" IsExpanded="True" ExpandDirection="Up">
         <Expander.Header>
-          <TextBlock Text="Solution route" />
+          <TextBlock Text="Маршрут решения" />
         </Expander.Header>
         <Border Classes="card" Padding="12">
           <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">

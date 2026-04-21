@@ -22,9 +22,9 @@ public static class FormatHelper
 
     public static string PlaybackStatusText(PlaybackStatus status) => status switch
     {
-        PlaybackStatus.FollowingSolution => "Following solution",
-        PlaybackStatus.Diverged => "Diverged",
-        PlaybackStatus.ManualEdit => "Manual edit",
-        _ => "No solution loaded"
+        PlaybackStatus.FollowingSolution => "Следуем по решению",
+        PlaybackStatus.Diverged => "Отклонение от решения",
+        PlaybackStatus.ManualEdit => "Ручное редактирование",
+        _ => "Решение не загружено"
     };
 }

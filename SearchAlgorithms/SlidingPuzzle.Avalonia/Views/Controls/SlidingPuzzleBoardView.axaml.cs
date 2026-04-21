@@ -7,6 +7,7 @@ namespace SlidingPuzzle.Avalonia.Views.Controls;
 public partial class SlidingPuzzleBoardView : UserControl
 {
     private int? _dragSourceIndex;
+    private int? _dragTargetIndex;
 
     public SlidingPuzzleBoardView()
     {
@@ -21,6 +22,7 @@ public partial class SlidingPuzzleBoardView : UserControl
             return;
 
         _dragSourceIndex = tile.Index;
+        _dragTargetIndex = tile.Index;
 
         if (ViewModel.IsEditMode)
         {
@@ -38,22 +40,27 @@ public partial class SlidingPuzzleBoardView : UserControl
             return;
 
         if (ViewModel.IsEditMode)
+        {
+            _dragTargetIndex = tile.Index;
             ViewModel.UpdateDragTarget(tile.Index);
+        }
     }
 
     private void Tile_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (_dragSourceIndex is null || sender is not Border { DataContext: PuzzleTileViewModel tile } || ViewModel is null)
+        if (_dragSourceIndex is null || ViewModel is null)
         {
             ViewModel?.ClearDragVisuals();
             _dragSourceIndex = null;
+            _dragTargetIndex = null;
             return;
         }
 
-        if (ViewModel.IsEditMode)
-            ViewModel.TrySwapTiles(_dragSourceIndex.Value, tile.Index);
+        if (ViewModel.IsEditMode && _dragTargetIndex is not null)
+            ViewModel.TrySwapTiles(_dragSourceIndex.Value, _dragTargetIndex.Value);
 
         ViewModel.ClearDragVisuals();
         _dragSourceIndex = null;
+        _dragTargetIndex = null;
     }
 }

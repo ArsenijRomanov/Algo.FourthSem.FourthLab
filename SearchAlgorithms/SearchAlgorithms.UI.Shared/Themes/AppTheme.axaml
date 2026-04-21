@@ -75,6 +75,11 @@
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
 
+  <Style Selector="Button.solve-action">
+    <Setter Property="Background" Value="#39C98A" />
+    <Setter Property="Foreground" Value="#0F1A13" />
+  </Style>
+
   <Style Selector="Button.secondary-action">
     <Setter Property="Padding" Value="12,10" />
     <Setter Property="Background" Value="#242A37" />

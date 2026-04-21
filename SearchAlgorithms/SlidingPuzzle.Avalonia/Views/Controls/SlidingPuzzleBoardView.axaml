@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:SlidingPuzzle.Avalonia.Converters"
              x:Class="SlidingPuzzle.Avalonia.Views.Controls.SlidingPuzzleBoardView">
-  <Border Classes="board-surface">
+  <Border Classes="board-surface" PointerReleased="Tile_PointerReleased">
     <ItemsControl ItemsSource="{Binding Tiles}">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>

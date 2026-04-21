@@ -24,7 +24,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     private int? _startColumn;
     private int? _finishRow;
     private int? _finishColumn;
-    private string _statusText = "Configure the board and run the solver.";
+    private string _statusText = "Настройте поле и запустите решатель.";
     private bool _isBusy;
 
     public HamiltonianMainViewModel(BenchmarkService benchmarkService)
@@ -112,7 +112,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     public void ResizeBoard()
     {
         RebuildCells();
-        StatusText = $"Board resized to {BoardHeight} × {BoardWidth}.";
+        StatusText = $"Размер поля изменён: {BoardHeight} × {BoardWidth}.";
     }
 
     public void SetTool(HamiltonianTool tool) => SelectedTool = tool;
@@ -205,21 +205,21 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             cell.PathIndex = 0;
         }
 
-        StatusText = "Walls cleared.";
+        StatusText = "Стены очищены.";
     }
 
     public void ClearEndpoints()
     {
         ClearStartOnly();
         ClearFinishOnly();
-        StatusText = "Start and finish cleared.";
+        StatusText = "Старт и финиш очищены.";
     }
 
     public void ClearAll()
     {
         RebuildCells();
         Results.Clear();
-        StatusText = "Board and results cleared.";
+        StatusText = "Поле и результаты очищены.";
     }
 
     private async Task RunCurrentAsync()
@@ -249,7 +249,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             if (current.Title != baseline.Title)
                 Results.Insert(0, current);
 
-            StatusText = "Baseline and current configuration have been executed.";
+            StatusText = "Базовый и текущий прогоны завершены.";
         }
         finally
         {
@@ -270,12 +270,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             {
                 Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
                 IsSuccess = false,
-                StatusText = "Missing start/finish",
+                StatusText = "Не задан старт/финиш",
                 Elapsed = TimeSpan.Zero,
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
-                Note = "Set both start and finish cells before solving."
+                Note = "Перед запуском нужно указать старт и финиш."
             };
         }
 
@@ -294,12 +294,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             {
                 Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
                 IsSuccess = false,
-                StatusText = "Rejected by precheck",
+                StatusText = "Отклонено пред-проверкой",
                 Elapsed = TimeSpan.Zero,
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
-                Note = "The board cannot contain a Hamiltonian path with the current start, finish and walls."
+                Note = "При текущем старте, финише и стенах гамильтонов путь невозможен."
             };
         }
 
@@ -323,14 +323,14 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         {
             Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
             IsSuccess = benchmark.Result,
-            StatusText = benchmark.Result ? "Solved" : "No path found",
+            StatusText = benchmark.Result ? "Решено" : "Путь не найден",
             Elapsed = benchmark.Elapsed,
-            ManagedMemoryDeltaBytes = benchmark.ManagedMemoryDeltaBytes,
-            WorkingSetDeltaBytes = benchmark.WorkingSetDeltaBytes,
+            ManagedMemoryDeltaBytes = Math.Max(0, benchmark.ManagedMemoryDeltaBytes),
+            WorkingSetDeltaBytes = Math.Max(0, benchmark.WorkingSetDeltaBytes),
             Steps = solvedSteps,
             Note = benchmark.Result
-                ? $"Path length: {solvedSteps}. Managed: {FormatHelper.FormatBytes(benchmark.ManagedMemoryDeltaBytes)}."
-                : "The solver finished without finding a Hamiltonian path."
+                ? $"Длина пути: {solvedSteps}. Память (managed): {FormatHelper.FormatBytes(Math.Max(0, benchmark.ManagedMemoryDeltaBytes))}."
+                : "Решатель завершил работу без найденного гамильтонова пути."
         };
     }
 
@@ -394,9 +394,9 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
     private static string BuildAlgorithmTitle(bool warnsdorff, bool connectivity, bool backjumping)
     {
-        var parts = new List<string> { "Base" };
-        if (warnsdorff) parts.Add("Warnsdorff");
-        if (connectivity) parts.Add("Connectivity");
+        var parts = new List<string> { "База" };
+        if (warnsdorff) parts.Add("Варнсдорф");
+        if (connectivity) parts.Add("Связность");
         if (backjumping) parts.Add("Backjumping");
         return string.Join(" + ", parts);
     }
