@@ -28,7 +28,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     private bool _isBusy;
     private bool _isEditMode;
     private PlaybackStatus _playbackStatus = PlaybackStatus.None;
-    private string _statusText = "Ready.";
+    private string _statusText = "Готово.";
     private PuzzleAlgorithmKind _selectedAlgorithm = PuzzleAlgorithmKind.AStar;
     private IReadOnlyList<Direction>? _solutionMoves;
     private List<byte[]>? _solutionStates;
@@ -117,7 +117,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         }
     }
 
-    public string InteractionModeText => IsEditMode ? "Edit mode" : "Play mode";
+    public string InteractionModeText => IsEditMode ? "Режим редактирования" : "Игровой режим";
 
     public PuzzleAlgorithmKind SelectedAlgorithm
     {
@@ -181,8 +181,8 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     }
 
     public string ProgressText => _solutionMoves is null
-        ? "No route"
-        : $"Step {CurrentStepIndex}/{_solutionMoves.Count}";
+        ? "Маршрут не построен"
+        : $"Шаг {CurrentStepIndex}/{_solutionMoves.Count}";
 
     public bool CanStepForward =>
         PlaybackStatus == PlaybackStatus.FollowingSolution &&
@@ -195,7 +195,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
 
     public async Task ImportBoardAsync(Window owner)
     {
-        var text = await _fileStorageService.PickAndReadTextAsync(owner, "Import puzzle board", "json");
+        var text = await _fileStorageService.PickAndReadTextAsync(owner, "Импорт поля пятнашек", "json");
         if (string.IsNullOrWhiteSpace(text))
             return;
 
@@ -206,7 +206,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         Size = dto.Size;
         _undoStack.Clear();
         LoadBoard(dto.Tiles, clearPlayback: true);
-        StatusText = "Board imported.";
+        StatusText = "Поле импортировано.";
     }
 
     public async Task ExportBoardAsync(Window owner)
@@ -218,8 +218,8 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         };
 
         var text = JsonSerializer.Serialize(dto, _jsonOptions);
-        await _fileStorageService.SaveTextAsync(owner, "Export puzzle board", "sliding-puzzle-board", ".json", text);
-        StatusText = "Board exported.";
+        await _fileStorageService.SaveTextAsync(owner, "Экспорт поля пятнашек", "sliding-puzzle-board", ".json", text);
+        StatusText = "Поле экспортировано.";
     }
 
     public void RandomizeBoard()
@@ -232,7 +232,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         var board = builder.BuildRandomSolvablePermutation();
         _undoStack.Clear();
         LoadBoard(board.ToArray(), clearPlayback: true);
-        StatusText = "Random solvable board generated.";
+        StatusText = "Сгенерировано случайное решаемое поле.";
     }
 
     public void ResetToSolved()
@@ -244,7 +244,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
 
         _undoStack.Clear();
         LoadBoard(tiles, clearPlayback: true);
-        StatusText = "Solved layout loaded.";
+        StatusText = "Загружена собранная раскладка.";
     }
 
     public void Undo()
@@ -258,7 +258,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         PlaybackStatus = snapshot.PlaybackStatus;
         CurrentStepIndex = snapshot.CurrentStepIndex;
         IsEditMode = snapshot.IsEditMode;
-        StatusText = "Undo restored the previous board state.";
+        StatusText = "Восстановлено предыдущее состояние поля.";
         UndoCommand.NotifyCanExecuteChanged();
     }
 
@@ -273,7 +273,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         PushUndoSnapshot();
         ApplyBlankMove(direction);
         SyncPlaybackAfterManualMove(direction);
-        StatusText = "Manual move applied.";
+        StatusText = "Ручной ход применён.";
         return true;
     }
 
@@ -286,7 +286,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         (_tiles[sourceIndex], _tiles[targetIndex]) = (_tiles[targetIndex], _tiles[sourceIndex]);
         RefreshTiles();
         PlaybackStatus = PlaybackStatus.ManualEdit;
-        StatusText = "Tiles swapped in edit mode.";
+        StatusText = "Плитки поменяны местами в режиме редактирования.";
         return true;
     }
 
@@ -298,7 +298,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         PushUndoSnapshot();
         ApplyBlankMove(direction);
         SyncPlaybackAfterManualMove(direction);
-        StatusText = "Blank tile moved manually.";
+        StatusText = "Пустая клетка сдвинута вручную.";
         return true;
     }
 
@@ -364,19 +364,19 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                 {
                     Title = title,
                     IsSuccess = benchmark.Result.IsSolved,
-                    StatusText = benchmark.Result.IsSolved ? "Solved" : "No solution",
+                    StatusText = benchmark.Result.IsSolved ? "Решено" : "Решение не найдено",
                     Elapsed = benchmark.Elapsed,
-                    ManagedMemoryDeltaBytes = benchmark.ManagedMemoryDeltaBytes,
-                    WorkingSetDeltaBytes = benchmark.WorkingSetDeltaBytes,
+                    ManagedMemoryDeltaBytes = Math.Max(0, benchmark.ManagedMemoryDeltaBytes),
+                    WorkingSetDeltaBytes = Math.Max(0, benchmark.WorkingSetDeltaBytes),
                     Steps = benchmark.Result.MoveCount,
                     Note = benchmark.Result.IsSolved
-                        ? $"Route loaded. Managed: {FormatHelper.FormatBytes(benchmark.ManagedMemoryDeltaBytes)}"
-                        : "Solver finished without finding a route."
+                        ? $"Маршрут загружен. Память (managed): {FormatHelper.FormatBytes(Math.Max(0, benchmark.ManagedMemoryDeltaBytes))}"
+                        : "Решатель завершил работу без найденного маршрута."
                 });
 
                 StatusText = benchmark.Result.IsSolved
-                    ? "Solution loaded. Use Prev/Next or keyboard arrows to inspect it."
-                    : "No solution found.";
+                    ? "Решение загружено. Используйте кнопки шагов или стрелки клавиатуры для просмотра."
+                    : "Решение не найдено.";
             }
             catch (Exception ex)
             {
@@ -384,7 +384,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                 {
                     Title = title,
                     IsSuccess = false,
-                    StatusText = "Invalid or unsolvable board",
+                    StatusText = "Некорректное или нерешаемое поле",
                     Elapsed = TimeSpan.Zero,
                     ManagedMemoryDeltaBytes = 0,
                     WorkingSetDeltaBytes = 0,
@@ -393,7 +393,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                 });
 
                 PlaybackStatus = PlaybackStatus.None;
-                StatusText = "The current board is invalid or unsolvable for the selected size.";
+                StatusText = "Текущее поле некорректно или нерешаемо для выбранного размера.";
             }
         }
         finally
@@ -445,7 +445,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
             RoutePreview.Add(new MoveChipViewModel
             {
                 StepIndex = i,
-                Text = moves[i].ToString(),
+                Text = FormatDirection(moves[i]),
                 IsActive = i == 0
             });
         }
@@ -466,7 +466,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         ApplyBlankMove(_solutionMoves[CurrentStepIndex]);
         CurrentStepIndex++;
         PlaybackStatus = PlaybackStatus.FollowingSolution;
-        StatusText = "Moved to the next step of the route.";
+        StatusText = "Переход к следующему шагу маршрута.";
     }
 
     private void StepBackward()
@@ -479,7 +479,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         _tiles = (byte[])_solutionStates![CurrentStepIndex].Clone();
         RefreshTiles();
         PlaybackStatus = PlaybackStatus.FollowingSolution;
-        StatusText = "Moved to the previous step of the route.";
+        StatusText = "Переход к предыдущему шагу маршрута.";
     }
 
     private void SyncPlaybackAfterManualMove(Direction move)
@@ -646,4 +646,13 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
 
         return true;
     }
+
+    private static string FormatDirection(Direction direction) => direction switch
+    {
+        Direction.Up => "Вверх",
+        Direction.Down => "Вниз",
+        Direction.Left => "Влево",
+        Direction.Right => "Вправо",
+        _ => direction.ToString()
+    };
 }

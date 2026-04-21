@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using HamiltonianPath.Avalonia.Models;
 using HamiltonianPath.Core;
 using HamiltonianPath.Core.Abstractions;
@@ -7,16 +8,16 @@ using HamiltonianPath.Core.Strategies;
 using SearchAlgorithms.UI.Shared.Helpers;
 using SearchAlgorithms.UI.Shared.Models;
 using SearchAlgorithms.UI.Shared.Mvvm;
-using SearchAlgorithms.UI.Shared.Services;
 
 namespace HamiltonianPath.Avalonia.ViewModels;
 
 public sealed class HamiltonianMainViewModel : ObservableObject
 {
-    private readonly BenchmarkService _benchmarkService;
     private HamiltonianTool _selectedTool = HamiltonianTool.Wall;
     private int _boardWidth = 7;
     private int _boardHeight = 7;
+    private int _pendingBoardWidth = 7;
+    private int _pendingBoardHeight = 7;
     private bool _useWarnsdorff;
     private bool _useConnectivity;
     private bool _useBackjumping;
@@ -24,13 +25,11 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     private int? _startColumn;
     private int? _finishRow;
     private int? _finishColumn;
-    private string _statusText = "Configure the board and run the solver.";
+    private string _statusText = "Настройте поле и запустите решатель.";
     private bool _isBusy;
 
-    public HamiltonianMainViewModel(BenchmarkService benchmarkService)
+    public HamiltonianMainViewModel()
     {
-        _benchmarkService = benchmarkService;
-
         Cells = [];
         Results = [];
 
@@ -38,6 +37,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         ClearWallsCommand = new RelayCommand(ClearWalls);
         ClearEndpointsCommand = new RelayCommand(ClearEndpoints);
         ClearAllCommand = new RelayCommand(ClearAll);
+        ClearResultsCommand = new RelayCommand(ClearResults);
         RunCurrentCommand = new AsyncRelayCommand(RunCurrentAsync, () => !IsBusy);
         RunBaselineAndCurrentCommand = new AsyncRelayCommand(RunBaselineAndCurrentAsync, () => !IsBusy);
 
@@ -51,19 +51,32 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     public RelayCommand ClearWallsCommand { get; }
     public RelayCommand ClearEndpointsCommand { get; }
     public RelayCommand ClearAllCommand { get; }
+    public RelayCommand ClearResultsCommand { get; }
     public AsyncRelayCommand RunCurrentCommand { get; }
     public AsyncRelayCommand RunBaselineAndCurrentCommand { get; }
 
     public int BoardWidth
     {
         get => _boardWidth;
-        set => SetProperty(ref _boardWidth, Math.Clamp(value, 2, 20));
+        private set => SetProperty(ref _boardWidth, Math.Clamp(value, 2, 20));
     }
 
     public int BoardHeight
     {
         get => _boardHeight;
-        set => SetProperty(ref _boardHeight, Math.Clamp(value, 2, 20));
+        private set => SetProperty(ref _boardHeight, Math.Clamp(value, 2, 20));
+    }
+
+    public int PendingBoardWidth
+    {
+        get => _pendingBoardWidth;
+        set => SetProperty(ref _pendingBoardWidth, Math.Clamp(value, 2, 20));
+    }
+
+    public int PendingBoardHeight
+    {
+        get => _pendingBoardHeight;
+        set => SetProperty(ref _pendingBoardHeight, Math.Clamp(value, 2, 20));
     }
 
     public bool UseWarnsdorff
@@ -111,8 +124,10 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
     public void ResizeBoard()
     {
+        BoardWidth = PendingBoardWidth;
+        BoardHeight = PendingBoardHeight;
         RebuildCells();
-        StatusText = $"Board resized to {BoardHeight} × {BoardWidth}.";
+        StatusText = $"Размер поля изменён: {BoardHeight} × {BoardWidth}.";
     }
 
     public void SetTool(HamiltonianTool tool) => SelectedTool = tool;
@@ -181,6 +196,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
                 _finishColumn = column;
                 break;
         }
+
+        RefreshPathLinks();
     }
 
     public void PaintWalls(int row, int column, bool erase)
@@ -195,6 +212,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
         cell.IsWall = !erase;
         cell.PathIndex = 0;
+        RefreshPathLinks();
     }
 
     public void ClearWalls()
@@ -205,29 +223,46 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             cell.PathIndex = 0;
         }
 
-        StatusText = "Walls cleared.";
+        StatusText = "Стены очищены.";
+        RefreshPathLinks();
     }
 
     public void ClearEndpoints()
     {
         ClearStartOnly();
         ClearFinishOnly();
-        StatusText = "Start and finish cleared.";
+        StatusText = "Старт и финиш очищены.";
+        RefreshPathLinks();
     }
 
     public void ClearAll()
     {
         RebuildCells();
         Results.Clear();
-        StatusText = "Board and results cleared.";
+        StatusText = "Поле и результаты очищены.";
     }
 
-    private async Task RunCurrentAsync()
+    public void ClearResults()
+    {
+        Results.Clear();
+        StatusText = "Результаты очищены.";
+    }
+
+    private Task RunCurrentAsync()
     {
         IsBusy = true;
         try
         {
-            var result = await Task.Run(SolveCurrentConfiguration);
+            AlgorithmRunRecord result;
+            try
+            {
+                result = SolveCurrentConfiguration();
+            }
+            catch (Exception ex)
+            {
+                result = CreateCrashResult(ex, UseWarnsdorff, UseConnectivity, UseBackjumping);
+            }
+
             Results.Insert(0, result);
             StatusText = result.Note ?? result.StatusText;
         }
@@ -235,26 +270,48 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         {
             IsBusy = false;
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task RunBaselineAndCurrentAsync()
+    private Task RunBaselineAndCurrentAsync()
     {
         IsBusy = true;
         try
         {
-            var baseline = await Task.Run(() => SolveConfiguration(false, false, false));
+            AlgorithmRunRecord baseline;
+            try
+            {
+                baseline = SolveConfiguration(false, false, false);
+            }
+            catch (Exception ex)
+            {
+                baseline = CreateCrashResult(ex, false, false, false);
+            }
+
             Results.Insert(0, baseline);
 
-            var current = await Task.Run(SolveCurrentConfiguration);
+            AlgorithmRunRecord current;
+            try
+            {
+                current = SolveCurrentConfiguration();
+            }
+            catch (Exception ex)
+            {
+                current = CreateCrashResult(ex, UseWarnsdorff, UseConnectivity, UseBackjumping);
+            }
+
             if (current.Title != baseline.Title)
                 Results.Insert(0, current);
 
-            StatusText = "Baseline and current configuration have been executed.";
+            StatusText = "Базовый и текущий прогоны завершены.";
         }
         finally
         {
             IsBusy = false;
         }
+
+        return Task.CompletedTask;
     }
 
     private AlgorithmRunRecord SolveCurrentConfiguration()
@@ -270,12 +327,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             {
                 Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
                 IsSuccess = false,
-                StatusText = "Missing start/finish",
+                StatusText = "Не задан старт/финиш",
                 Elapsed = TimeSpan.Zero,
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
-                Note = "Set both start and finish cells before solving."
+                Note = "Перед запуском нужно указать старт и финиш."
             };
         }
 
@@ -294,12 +351,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             {
                 Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
                 IsSuccess = false,
-                StatusText = "Rejected by precheck",
+                StatusText = "Отклонено пред-проверкой",
                 Elapsed = TimeSpan.Zero,
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
-                Note = "The board cannot contain a Hamiltonian path with the current start, finish and walls."
+                Note = "При текущем старте, финише и стенах гамильтонов путь невозможен."
             };
         }
 
@@ -311,10 +368,18 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             ? new ConnectivityCommitValidator()
             : new BaseCommitValidator();
 
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        var managedBefore = GC.GetTotalMemory(true);
+        var stopwatch = Stopwatch.StartNew();
         var solver = new HamiltonianPathSolver(chooseDirection, commitValidator, backjumping);
-        var benchmark = _benchmarkService.Run(() => solver.Solve(board));
+        var isSolved = solver.Solve(board);
+        stopwatch.Stop();
+        var managedAfter = GC.GetTotalMemory(true);
+        var managedDelta = Math.Max(0, managedAfter - managedBefore);
 
-        if (benchmark.Result)
+        if (isSolved)
             ApplySolution(board);
 
         var solvedSteps = Cells.Where(static c => c.PathIndex > 0).Count();
@@ -322,15 +387,15 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         return new AlgorithmRunRecord
         {
             Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
-            IsSuccess = benchmark.Result,
-            StatusText = benchmark.Result ? "Solved" : "No path found",
-            Elapsed = benchmark.Elapsed,
-            ManagedMemoryDeltaBytes = benchmark.ManagedMemoryDeltaBytes,
-            WorkingSetDeltaBytes = benchmark.WorkingSetDeltaBytes,
+            IsSuccess = isSolved,
+            StatusText = isSolved ? "Решено" : "Путь не найден",
+            Elapsed = stopwatch.Elapsed,
+            ManagedMemoryDeltaBytes = managedDelta,
+            WorkingSetDeltaBytes = 0,
             Steps = solvedSteps,
-            Note = benchmark.Result
-                ? $"Path length: {solvedSteps}. Managed: {FormatHelper.FormatBytes(benchmark.ManagedMemoryDeltaBytes)}."
-                : "The solver finished without finding a Hamiltonian path."
+            Note = isSolved
+                ? $"Длина пути: {solvedSteps}. .NET память: {FormatHelper.FormatBytes(managedDelta)}."
+                : "Решатель завершил работу без найденного гамильтонова пути."
         };
     }
 
@@ -341,6 +406,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             if (!cell.IsWall && !cell.IsStart && !cell.IsFinish)
                 cell.PathIndex = board[cell.Row, cell.Column];
         }
+
+        RefreshPathLinks();
     }
 
     private void ClearSolutionPath()
@@ -350,6 +417,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             if (!cell.IsWall && !cell.IsStart && !cell.IsFinish)
                 cell.PathIndex = 0;
         }
+
+        RefreshPathLinks();
     }
 
     private void RebuildCells()
@@ -364,6 +433,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         }
 
         ClearSolutionPath();
+        RefreshPathLinks();
         OnPropertyChanged(nameof(Cells));
     }
 
@@ -379,6 +449,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         cell.IsStart = false;
         _startRow = null;
         _startColumn = null;
+        RefreshPathLinks();
     }
 
     private void ClearFinishOnly()
@@ -390,14 +461,91 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         cell.IsFinish = false;
         _finishRow = null;
         _finishColumn = null;
+        RefreshPathLinks();
     }
 
     private static string BuildAlgorithmTitle(bool warnsdorff, bool connectivity, bool backjumping)
     {
-        var parts = new List<string> { "Base" };
-        if (warnsdorff) parts.Add("Warnsdorff");
-        if (connectivity) parts.Add("Connectivity");
+        var parts = new List<string> { "База" };
+        if (warnsdorff) parts.Add("Варнсдорф");
+        if (connectivity) parts.Add("Связность");
         if (backjumping) parts.Add("Backjumping");
         return string.Join(" + ", parts);
+    }
+
+    private static AlgorithmRunRecord CreateCrashResult(Exception ex, bool warnsdorff, bool connectivity, bool backjumping) => new()
+    {
+        Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
+        IsSuccess = false,
+        StatusText = "Ошибка выполнения",
+        Elapsed = TimeSpan.Zero,
+        ManagedMemoryDeltaBytes = 0,
+        WorkingSetDeltaBytes = 0,
+        Steps = 0,
+        Note = $"Исключение: {ex.GetType().Name}. {ex.Message}"
+    };
+
+    private void RefreshPathLinks()
+    {
+        foreach (var cell in Cells)
+            cell.SetLinks(false, false, false, false);
+
+        var indexedCells = Cells.Where(static c => c.PathIndex > 0).ToList();
+        if (indexedCells.Count == 0)
+            return;
+
+        var byIndex = indexedCells.ToDictionary(static c => c.PathIndex);
+        var minCell = byIndex[byIndex.Keys.Min()];
+        var maxCell = byIndex[byIndex.Keys.Max()];
+
+        foreach (var cell in indexedCells)
+        {
+            var top = TryGetPathIndex(cell.Row - 1, cell.Column, out var topIndex) && Math.Abs(topIndex - cell.PathIndex) == 1;
+            var right = TryGetPathIndex(cell.Row, cell.Column + 1, out var rightIndex) && Math.Abs(rightIndex - cell.PathIndex) == 1;
+            var bottom = TryGetPathIndex(cell.Row + 1, cell.Column, out var bottomIndex) && Math.Abs(bottomIndex - cell.PathIndex) == 1;
+            var left = TryGetPathIndex(cell.Row, cell.Column - 1, out var leftIndex) && Math.Abs(leftIndex - cell.PathIndex) == 1;
+            cell.SetLinks(top, right, bottom, left);
+        }
+
+        var startCell = Cells.FirstOrDefault(static c => c.IsStart);
+        if (startCell is not null)
+            ConnectEndpoint(startCell, minCell, maxCell);
+
+        var finishCell = Cells.FirstOrDefault(static c => c.IsFinish);
+        if (finishCell is not null)
+            ConnectEndpoint(finishCell, maxCell, minCell);
+    }
+
+    private void ConnectEndpoint(HamiltonianBoardCellViewModel endpoint, HamiltonianBoardCellViewModel primary, HamiltonianBoardCellViewModel secondary)
+    {
+        if (TryApplyLink(endpoint, primary))
+            return;
+
+        TryApplyLink(endpoint, secondary);
+    }
+
+    private bool TryApplyLink(HamiltonianBoardCellViewModel from, HamiltonianBoardCellViewModel to)
+    {
+        var dr = to.Row - from.Row;
+        var dc = to.Column - from.Column;
+        if (Math.Abs(dr) + Math.Abs(dc) != 1)
+            return false;
+
+        from.SetLinks(dr == -1, dc == 1, dr == 1, dc == -1);
+        return true;
+    }
+
+    private bool TryGetPathIndex(int row, int column, out int index)
+    {
+        index = 0;
+        if (row < 0 || column < 0 || row >= BoardHeight || column >= BoardWidth)
+            return false;
+
+        var cell = GetCell(row, column);
+        if (cell.PathIndex <= 0)
+            return false;
+
+        index = cell.PathIndex;
+        return true;
     }
 }
