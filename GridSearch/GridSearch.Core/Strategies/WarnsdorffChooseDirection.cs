@@ -6,9 +6,10 @@ namespace GridSearch.Core.Strategies;
 
 public class WarnsdorffChooseDirection : IChooseDirection
 {
-    public PathState GetNextPathState(Board board, PathState pathState)
+    public (PathState nextState, Direction chosenDir) GetNextPathState(Board board, PathState pathState)
     {
         var best = default(PathState);
+        var bestDir = default(Direction);
         var bestFreedom = byte.MaxValue;
         var hasBest = false;
 
@@ -25,11 +26,12 @@ public class WarnsdorffChooseDirection : IChooseDirection
 
             best = nextPathState;
             bestFreedom = freedom;
+            bestDir = dir;
             hasBest = true;
         }
 
-        return hasBest
-            ? best
-            : throw new ArgumentException(null, nameof(pathState));
+        return !hasBest 
+            ? throw new ArgumentException(null, nameof(pathState)) 
+            : (best, bestDir);
     }
 }

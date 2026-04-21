@@ -34,7 +34,7 @@ public class Board
         set => _matrix[point.Y, point.X] = value;
     }
 
-    public void Mark(Point point, int value) => this[point] = value;
+    public void Mark(Point point, int value = 1) => this[point] = value;
     
     public void Unmark(Point point) => this[point] = 0;
 
@@ -43,7 +43,8 @@ public class Board
     public bool IsVisited(Point point) => this[point] == 1;
 
     public bool Contains(Point point)
-        => point.X < Width && point.Y < Height;
+        => point.X >= 0 && point.X < Width && 
+           point.Y >= 0 && point.Y < Height;
     
     public bool Contains(int y, int x)
         => x < Width && x >= 0 && y < Height && y >= 0;

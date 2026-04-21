@@ -6,13 +6,13 @@ namespace GridSearch.Core.Strategies;
 
 public class BaseChooseDirection : IChooseDirection
 {
-    public PathState GetNextPathState(Board board, PathState pathState)
+    public (PathState nextState, Direction chosenDir) GetNextPathState(Board board, PathState pathState)
     {
         foreach (var dir in DirectionHelper.All)
         {
             if (!pathState.CanMove(dir) || !board.TryStep(pathState.Point, dir, out var nextPoint)) continue;
             var nextPathState = new PathState(nextPoint, board.CalculateDirsMask(nextPoint));
-            return nextPathState;
+            return (nextPathState, dir);
         }
 
         throw new ArgumentException(null, nameof(pathState));

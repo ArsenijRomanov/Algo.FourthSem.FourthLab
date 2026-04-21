@@ -4,5 +4,5 @@ namespace GridSearch.Core.Abstractions;
 
 public interface IChooseDirection
 {
-    PathState GetNextPathState(Board matrix, PathState pathState);
+    (PathState nextState, Direction chosenDir) GetNextPathState(Board matrix, PathState pathState);
 }

@@ -2,7 +2,7 @@ using GridSearch.Core.Domains;
 
 namespace GridSearch.Core.Contexts;
 
-public class SearchContext
+public struct SearchContext
 {
     public readonly Board Board;
     public readonly int PathLength;
