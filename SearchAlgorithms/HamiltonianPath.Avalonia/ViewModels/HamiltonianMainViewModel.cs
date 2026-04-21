@@ -536,7 +536,23 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         if (Math.Abs(dr) + Math.Abs(dc) != 1)
             return false;
 
-        from.SetLinks(dr == -1, dc == 1, dr == 1, dc == -1);
+        var fromTop = dr == -1;
+        var fromRight = dc == 1;
+        var fromBottom = dr == 1;
+        var fromLeft = dc == -1;
+
+        from.SetLinks(
+            from.LinkTop || fromTop,
+            from.LinkRight || fromRight,
+            from.LinkBottom || fromBottom,
+            from.LinkLeft || fromLeft);
+
+        to.SetLinks(
+            to.LinkTop || fromBottom,
+            to.LinkRight || fromLeft,
+            to.LinkBottom || fromTop,
+            to.LinkLeft || fromRight);
+
         return true;
     }
 
