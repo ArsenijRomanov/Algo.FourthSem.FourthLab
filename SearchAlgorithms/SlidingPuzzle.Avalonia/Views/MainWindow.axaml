@@ -26,25 +26,27 @@
                 <NumericUpDown Minimum="2" Maximum="6" Value="{Binding BoardHeight}" />
               </StackPanel>
             </Grid>
-            <WrapPanel>
-              <Button Classes="secondary-action" Content="Случайно" Command="{Binding RandomizeCommand}" />
-              <Button Classes="secondary-action" Content="Задать глубину">
-                <Button.Flyout>
-                  <Flyout Placement="Bottom">
-                    <StackPanel Width="240" Spacing="8">
-                      <TextBlock Classes="section-title" Text="Задать глубину" />
-                      <TextBlock Classes="caption" Text="Введите целевую глубину от финального состояния. 0 или пусто = полностью случайная перестановка." TextWrapping="Wrap" />
-                      <TextBox Watermark="Например: 20"
-                               Text="{Binding RandomShuffleMovesText}" />
-                    </StackPanel>
-                  </Flyout>
-                </Button.Flyout>
-              </Button>
-              <Button Classes="secondary-action" Content="Собранная" Command="{Binding ResetSolvedCommand}" />
-              <Button Classes="secondary-action" Content="Импорт" Click="ImportButton_Click" />
-              <Button Classes="secondary-action" Content="Экспорт" Click="ExportButton_Click" />
-              <Button Classes="secondary-action" Content="Отменить" Command="{Binding UndoCommand}" />
-            </WrapPanel>
+            <StackPanel Spacing="8">
+              <WrapPanel ItemWidth="170">
+                <Button Width="170" Classes="secondary-action" Content="Случайно" Command="{Binding RandomizeCommand}" />
+                <Button Width="170" Classes="secondary-action" Content="Задать глубину">
+                  <Button.Flyout>
+                    <Flyout Placement="Bottom">
+                      <StackPanel Width="240" Spacing="8">
+                        <TextBlock Classes="section-title" Text="Задать глубину" />
+                        <TextBlock Classes="caption" Text="Введите целевую глубину от финального состояния. 0 или пусто = полностью случайная перестановка." TextWrapping="Wrap" />
+                        <TextBox Watermark="Например: 20"
+                                 Text="{Binding RandomShuffleMovesText}" />
+                      </StackPanel>
+                    </Flyout>
+                  </Button.Flyout>
+                </Button>
+              </WrapPanel>
+              <Button Width="170" Classes="secondary-action" Content="Собранная" Command="{Binding ResetSolvedCommand}" />
+              <Button Width="170" Classes="secondary-action" Content="Импорт" Click="ImportButton_Click" />
+              <Button Width="170" Classes="secondary-action" Content="Экспорт" Click="ExportButton_Click" />
+              <Button Width="170" Classes="secondary-action" Content="Отменить" Command="{Binding UndoCommand}" />
+            </StackPanel>
             <StackPanel Spacing="6">
               <TextBlock Classes="caption" Text="Режим редактирования" />
               <ToggleSwitch Classes="mode-toggle" IsChecked="{Binding IsEditMode}" />
