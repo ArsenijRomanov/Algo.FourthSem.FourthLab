@@ -8,9 +8,10 @@
         Height="920"
         MinWidth="1180"
         MinHeight="760">
-  <Grid ColumnDefinitions="380,18,*" Margin="18">
-    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16">
+  <Grid>
+    <Grid ColumnDefinitions="380,18,*" Margin="18" IsEnabled="{Binding IsInteractionEnabled}">
+      <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16">
         <Border Classes="card">
           <StackPanel Spacing="10">
             <TextBlock Classes="section-title" Text="Настройка поля" />
@@ -88,17 +89,39 @@
             </ItemsControl>
           </StackPanel>
         </Border>
-      </StackPanel>
-    </ScrollViewer>
+        </StackPanel>
+      </ScrollViewer>
 
-    <Grid Grid.Column="2" RowDefinitions="Auto,14,*">
-      <Border Classes="card" Padding="16">
-        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-          <TextBlock Classes="section-title" Text="Сетка" />
-          <TextBlock Classes="caption" Text="Поле автоматически подстраивается под окно." />
+      <Grid Grid.Column="2" RowDefinitions="Auto,14,*">
+        <Border Classes="card" Padding="16">
+          <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <TextBlock Classes="section-title" Text="Сетка" />
+            <TextBlock Classes="caption" Text="Поле автоматически подстраивается под окно." />
+          </StackPanel>
+        </Border>
+        <controls:HamiltonianBoardView Grid.Row="2" />
+      </Grid>
+    </Grid>
+
+    <Border IsVisible="{Binding IsBusy}"
+            Background="#AA12141A"
+            ZIndex="99">
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              Classes="card"
+              Padding="20">
+        <StackPanel Spacing="12" Width="280">
+          <TextBlock Classes="section-title"
+                     Text="Выполняется анализ"
+                     HorizontalAlignment="Center" />
+          <TextBlock Classes="caption"
+                     Text="Пожалуйста, подождите. Редактирование поля и кнопки временно заблокированы."
+                     TextWrapping="Wrap"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center" />
+          <ProgressBar IsIndeterminate="True" Height="8" />
         </StackPanel>
       </Border>
-      <controls:HamiltonianBoardView Grid.Row="2" />
-    </Grid>
+    </Border>
   </Grid>
 </Window>

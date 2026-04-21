@@ -118,9 +118,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             {
                 RunCurrentCommand.NotifyCanExecuteChanged();
                 RunBaselineAndCurrentCommand.NotifyCanExecuteChanged();
+                OnPropertyChanged(nameof(IsInteractionEnabled));
             }
         }
     }
+
+    public bool IsInteractionEnabled => !IsBusy;
 
     public void ResizeBoard()
     {
