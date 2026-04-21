@@ -245,7 +245,16 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var result = SolveCurrentConfiguration();
+            AlgorithmRunRecord result;
+            try
+            {
+                result = SolveCurrentConfiguration();
+            }
+            catch (Exception ex)
+            {
+                result = CreateCrashResult(ex, UseWarnsdorff, UseConnectivity, UseBackjumping);
+            }
+
             Results.Insert(0, result);
             StatusText = result.Note ?? result.StatusText;
         }
@@ -262,10 +271,28 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var baseline = SolveConfiguration(false, false, false);
+            AlgorithmRunRecord baseline;
+            try
+            {
+                baseline = SolveConfiguration(false, false, false);
+            }
+            catch (Exception ex)
+            {
+                baseline = CreateCrashResult(ex, false, false, false);
+            }
+
             Results.Insert(0, baseline);
 
-            var current = SolveCurrentConfiguration();
+            AlgorithmRunRecord current;
+            try
+            {
+                current = SolveCurrentConfiguration();
+            }
+            catch (Exception ex)
+            {
+                current = CreateCrashResult(ex, UseWarnsdorff, UseConnectivity, UseBackjumping);
+            }
+
             if (current.Title != baseline.Title)
                 Results.Insert(0, current);
 
@@ -437,6 +464,18 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         if (backjumping) parts.Add("Backjumping");
         return string.Join(" + ", parts);
     }
+
+    private static AlgorithmRunRecord CreateCrashResult(Exception ex, bool warnsdorff, bool connectivity, bool backjumping) => new()
+    {
+        Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
+        IsSuccess = false,
+        StatusText = "Ошибка выполнения",
+        Elapsed = TimeSpan.Zero,
+        ManagedMemoryDeltaBytes = 0,
+        WorkingSetDeltaBytes = 0,
+        Steps = 0,
+        Note = $"Исключение: {ex.GetType().Name}. {ex.Message}"
+    };
 
     private void RefreshPathLinks()
     {

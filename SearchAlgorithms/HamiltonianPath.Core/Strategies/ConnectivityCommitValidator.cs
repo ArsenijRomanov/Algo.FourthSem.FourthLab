@@ -28,7 +28,9 @@ public class ConnectivityCommitValidator : ICommitValidator
         EnsureStampBuffer(board.Height, board.Width);
         StartNewStamp();
         
-        var firstNeighbour = GetNeighbourUnchecked(board, state.Point, firstDir);
+        if (!TryGetNeighbour(board, state.Point, firstDir, out var firstNeighbour))
+            return false;
+
         MarkConnectedComponent(board, firstNeighbour, state.Point);
 
         foreach (var dir in StepHelper.All)
@@ -36,7 +38,8 @@ public class ConnectivityCommitValidator : ICommitValidator
             if (!state.CanMove(dir))
                 continue;
 
-            var neighbour = GetNeighbourUnchecked(board, state.Point, dir);
+            if (!TryGetNeighbour(board, state.Point, dir, out var neighbour))
+                return false;
 
             if (!IsMarked(neighbour))
                 return false;
@@ -95,15 +98,20 @@ public class ConnectivityCommitValidator : ICommitValidator
         return false;
     }
 
-    private static Point GetNeighbourUnchecked(Board board, Point point, DirectionFlag dir)
+    private static bool TryGetNeighbour(Board board, Point point, DirectionFlag dir, out Point neighbour)
     {
         var (dx, dy) = StepHelper.GetOffset(dir);
         var nextX = point.X + dx;
         var nextY = point.Y + dy;
 
-        return !board.Contains(nextY, nextX) 
-            ? throw new ArgumentException(null, nameof(dir)) 
-            : new Point(nextX, nextY);
+        if (!board.Contains(nextY, nextX))
+        {
+            neighbour = default;
+            return false;
+        }
+
+        neighbour = new Point(nextX, nextY);
+        return true;
     }
 
     private static bool TryGetAnyAvailableDirection(PathState state, out DirectionFlag dir)
