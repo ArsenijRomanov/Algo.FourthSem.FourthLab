@@ -8,6 +8,8 @@ public partial class SlidingPuzzleBoardView : UserControl
 {
     private int? _dragSourceIndex;
     private int? _dragTargetIndex;
+    private int? _selectedSwapSourceIndex;
+    private bool _dragMoved;
 
     public SlidingPuzzleBoardView()
     {
@@ -23,6 +25,7 @@ public partial class SlidingPuzzleBoardView : UserControl
 
         _dragSourceIndex = tile.Index;
         _dragTargetIndex = tile.Index;
+        _dragMoved = false;
 
         if (ViewModel.IsEditMode)
         {
@@ -42,6 +45,7 @@ public partial class SlidingPuzzleBoardView : UserControl
         if (ViewModel.IsEditMode)
         {
             _dragTargetIndex = tile.Index;
+            _dragMoved = _dragSourceIndex != tile.Index;
             ViewModel.UpdateDragTarget(tile.Index);
         }
     }
@@ -56,11 +60,50 @@ public partial class SlidingPuzzleBoardView : UserControl
             return;
         }
 
-        if (ViewModel.IsEditMode && _dragTargetIndex is not null)
-            ViewModel.TrySwapTiles(_dragSourceIndex.Value, _dragTargetIndex.Value);
+        if (ViewModel.IsEditMode)
+        {
+            if (_dragMoved && _dragTargetIndex is not null && _dragTargetIndex != _dragSourceIndex)
+            {
+                ViewModel.TrySwapTiles(_dragSourceIndex.Value, _dragTargetIndex.Value);
+                _selectedSwapSourceIndex = null;
+                ViewModel.ClearDragVisuals();
+            }
+            else
+            {
+                HandleEditClick(_dragSourceIndex.Value);
+            }
+        }
+        else
+        {
+            ViewModel.ClearDragVisuals();
+        }
 
-        ViewModel.ClearDragVisuals();
         _dragSourceIndex = null;
         _dragTargetIndex = null;
+        _dragMoved = false;
+    }
+
+    private void HandleEditClick(int tileIndex)
+    {
+        if (ViewModel is null || !ViewModel.IsEditMode)
+            return;
+
+        if (_selectedSwapSourceIndex is null)
+        {
+            _selectedSwapSourceIndex = tileIndex;
+            ViewModel.BeginDrag(tileIndex);
+            return;
+        }
+
+        if (_selectedSwapSourceIndex == tileIndex)
+        {
+            _selectedSwapSourceIndex = null;
+            ViewModel.ClearDragVisuals();
+            return;
+        }
+
+        ViewModel.TrySwapTiles(_selectedSwapSourceIndex.Value, tileIndex);
+        _selectedSwapSourceIndex = null;
+        ViewModel.ClearDragVisuals();
     }
 }

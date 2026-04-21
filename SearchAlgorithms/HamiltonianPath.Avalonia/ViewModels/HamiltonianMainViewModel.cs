@@ -222,12 +222,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         StatusText = "Поле и результаты очищены.";
     }
 
-    private async Task RunCurrentAsync()
+    private Task RunCurrentAsync()
     {
         IsBusy = true;
         try
         {
-            var result = await Task.Run(SolveCurrentConfiguration);
+            var result = SolveCurrentConfiguration();
             Results.Insert(0, result);
             StatusText = result.Note ?? result.StatusText;
         }
@@ -235,17 +235,19 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         {
             IsBusy = false;
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task RunBaselineAndCurrentAsync()
+    private Task RunBaselineAndCurrentAsync()
     {
         IsBusy = true;
         try
         {
-            var baseline = await Task.Run(() => SolveConfiguration(false, false, false));
+            var baseline = SolveConfiguration(false, false, false);
             Results.Insert(0, baseline);
 
-            var current = await Task.Run(SolveCurrentConfiguration);
+            var current = SolveCurrentConfiguration();
             if (current.Title != baseline.Title)
                 Results.Insert(0, current);
 
@@ -255,6 +257,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         {
             IsBusy = false;
         }
+
+        return Task.CompletedTask;
     }
 
     private AlgorithmRunRecord SolveCurrentConfiguration()
