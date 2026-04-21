@@ -29,8 +29,8 @@ public sealed class BenchmarkService
         {
             Result = result,
             Elapsed = stopwatch.Elapsed,
-            ManagedMemoryDeltaBytes = managedAfter - managedBefore,
-            WorkingSetDeltaBytes = workingSetAfter - workingSetBefore
+            ManagedMemoryDeltaBytes = Math.Max(0, managedAfter - managedBefore),
+            WorkingSetDeltaBytes = Math.Max(0, workingSetAfter - workingSetBefore)
         };
     }
 }

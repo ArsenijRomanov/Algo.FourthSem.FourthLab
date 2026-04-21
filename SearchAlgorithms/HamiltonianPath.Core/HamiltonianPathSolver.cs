@@ -1,6 +1,7 @@
 using HamiltonianPath.Core.Abstractions;
 using HamiltonianPath.Core.Contexts;
 using HamiltonianPath.Core.Domains;
+using HamiltonianPath.Core.Enums;
 using HamiltonianPath.Core.Helpers;
 
 namespace HamiltonianPath.Core;
@@ -42,12 +43,34 @@ public class HamiltonianPathSolver(
 
             curState = stack.Pop();
 
-            var (nextState, chosenDir) = _chooseDirection.GetNextPathState(board, curState);
+            PathState nextState;
+            DirectionFlag chosenDir;
+            try
+            {
+                (nextState, chosenDir) = _chooseDirection.GetNextPathState(board, curState);
+            }
+            catch (ArgumentException)
+            {
+                curState.DirsMask = DirectionFlag.None;
+                stack.Push(curState);
+                continue;
+            }
+
             curState.RemoveDirection(chosenDir);
 
             stack.Push(curState);
 
-            if (!_commitValidator.Validate(new SearchContext(board, stack.Count), nextState))
+            bool isValidStep;
+            try
+            {
+                isValidStep = _commitValidator.Validate(new SearchContext(board, stack.Count), nextState);
+            }
+            catch (ArgumentException)
+            {
+                isValidStep = false;
+            }
+
+            if (!isValidStep)
                 continue;
 
             board.SetVisited(nextState.Point);
