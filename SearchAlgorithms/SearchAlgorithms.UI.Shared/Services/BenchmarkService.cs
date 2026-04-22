@@ -9,12 +9,8 @@ public sealed class BenchmarkService
     {
         ArgumentNullException.ThrowIfNull(action);
 
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-
         var process = Process.GetCurrentProcess();
-        var managedBefore = GC.GetTotalMemory(forceFullCollection: true);
+        var managedBefore = GC.GetAllocatedBytesForCurrentThread();
         var workingSetBefore = process.WorkingSet64;
 
         var stopwatch = Stopwatch.StartNew();
@@ -22,7 +18,7 @@ public sealed class BenchmarkService
         stopwatch.Stop();
 
         process.Refresh();
-        var managedAfter = GC.GetTotalMemory(forceFullCollection: true);
+        var managedAfter = GC.GetAllocatedBytesForCurrentThread();
         var workingSetAfter = process.WorkingSet64;
 
         return new BenchmarkRunResult<TResult>

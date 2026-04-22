@@ -34,7 +34,7 @@ public sealed class PuzzleTileViewModel : ObservableObject
         set
         {
             if (SetProperty(ref _isDragSource, value))
-                OnPropertiesChanged(nameof(ScaleFactor));
+                OnPropertiesChanged(nameof(ScaleFactor), nameof(BackgroundBrush), nameof(BorderBrush), nameof(BorderThicknessValue));
         }
     }
 
@@ -52,9 +52,11 @@ public sealed class PuzzleTileViewModel : ObservableObject
     public string Text => IsBlank ? string.Empty : Value.ToString();
     public double ScaleFactor => IsDragSource ? 1.05 : 1.0;
 
-    public IBrush BackgroundBrush => IsBlank
-        ? new SolidColorBrush(Color.Parse("#222733"))
-        : new SolidColorBrush(Color.Parse("#2A3140"));
+    public IBrush BackgroundBrush => IsDragSource
+        ? new SolidColorBrush(Color.Parse("#232A37"))
+        : IsBlank
+            ? new SolidColorBrush(Color.Parse("#222733"))
+            : new SolidColorBrush(Color.Parse("#2A3140"));
 
     public IBrush BorderBrush => IsDragTarget
         ? new SolidColorBrush(Color.Parse("#67A7FF"))

@@ -6,8 +6,8 @@
     <ItemsControl ItemsSource="{Binding Tiles}">
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
-          <UniformGrid Rows="{Binding $parent[ItemsControl].DataContext.Size}"
-                       Columns="{Binding $parent[ItemsControl].DataContext.Size}" />
+          <UniformGrid Rows="{Binding $parent[ItemsControl].DataContext.BoardHeight}"
+                       Columns="{Binding $parent[ItemsControl].DataContext.BoardWidth}" />
         </ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>

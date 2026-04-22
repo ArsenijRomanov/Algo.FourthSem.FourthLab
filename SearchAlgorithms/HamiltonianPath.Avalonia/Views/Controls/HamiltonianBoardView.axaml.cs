@@ -18,6 +18,9 @@ public partial class HamiltonianBoardView : UserControl
 
     private void Cell_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        if (ViewModel?.IsBusy == true)
+            return;
+
         if (sender is not Control { DataContext: HamiltonianBoardCellViewModel cell })
             return;
 
@@ -27,6 +30,9 @@ public partial class HamiltonianBoardView : UserControl
 
     private void Cell_PointerEntered(object? sender, PointerEventArgs e)
     {
+        if (ViewModel?.IsBusy == true)
+            return;
+
         if (!_isPointerDown)
             return;
 
@@ -44,7 +50,7 @@ public partial class HamiltonianBoardView : UserControl
 
     private void Apply(HamiltonianBoardCellViewModel cell)
     {
-        if (ViewModel is null)
+        if (ViewModel is null || ViewModel.IsBusy)
             return;
 
         if (ViewModel.SelectedTool is HamiltonianTool.Wall)

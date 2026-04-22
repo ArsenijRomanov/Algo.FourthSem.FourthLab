@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlidingPuzzle.Avalonia", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SearchAlgorithms.UI.Shared", "SearchAlgorithms.UI.Shared\SearchAlgorithms.UI.Shared.csproj", "{6BAD8E0F-93F2-4902-9042-FED7EC104B68}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Debug", "Debug\Debug.csproj", "{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{6BAD8E0F-93F2-4902-9042-FED7EC104B68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6BAD8E0F-93F2-4902-9042-FED7EC104B68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6BAD8E0F-93F2-4902-9042-FED7EC104B68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,6 +1,8 @@
+using Avalonia;
 using global::Avalonia.Controls;
 using global::Avalonia.Input;
 using global::Avalonia.Interactivity;
+using global::Avalonia.VisualTree;
 using SlidingPuzzle.Avalonia.ViewModels;
 using SlidingPuzzle.Core.Enums;
 
@@ -32,6 +34,17 @@ public partial class MainWindow : Window
         if (ViewModel is null || ViewModel.IsEditMode)
             return;
 
+        if (FocusManager.GetFocusedElement() is Visual focused)
+        {
+            if (focused.GetSelfAndVisualAncestors().OfType<ComboBoxItem>().Any()
+                || focused is ComboBox
+                || focused is TextBox
+                || focused is NumericUpDown)
+            {
+                return;
+            }
+        }
+
         switch (e.Key)
         {
             case Key.Left:
@@ -51,5 +64,10 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
         }
+    }
+
+    private void AlgorithmComboBox_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        Focus();
     }
 }
