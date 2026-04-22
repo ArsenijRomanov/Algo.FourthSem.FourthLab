@@ -3,7 +3,7 @@
         xmlns:controls="clr-namespace:SlidingPuzzle.Avalonia.Views.Controls"
         xmlns:local="clr-namespace:SlidingPuzzle.Avalonia.Converters"
         x:Class="SlidingPuzzle.Avalonia.Views.MainWindow"
-        Title="Лабораторная: пятнашки"
+        Title="Пятнашки"
         Width="1480"
         Height="940"
         MinWidth="1220"
@@ -56,7 +56,7 @@
 
         <Border Classes="card">
           <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="Проигрывание и ручное управление" />
+            <TextBlock Classes="section-title" Text="Управление" />
             <Border Classes="metric-badge"
                     Background="{Binding PlaybackBackgroundBrush}"
                     BorderBrush="{Binding PlaybackBorderBrush}"
@@ -98,8 +98,8 @@
                     <StackPanel Spacing="8">
                       <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                       <WrapPanel>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}{0:0.##} ms'}" /></Border>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}.Память: {0}'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}Время: {0:0.##} ms'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}Память: {0}'}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}ходов: {0}'}" /></Border>
                       </WrapPanel>
                       <TextBlock Text="{Binding StatusText}" />

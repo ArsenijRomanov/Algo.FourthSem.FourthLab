@@ -376,7 +376,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         {
             var title = SelectedAlgorithm switch
             {
-                PuzzleAlgorithmKind.Bfs => "BFS",
+                PuzzleAlgorithmKind.BFS => "BFS",
                 PuzzleAlgorithmKind.AStar => "A*",
                 PuzzleAlgorithmKind.IdaStar => "IDA*",
                 _ => "IDA* + Backjumping"
@@ -407,8 +407,8 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                     WorkingSetDeltaBytes = benchmark.WorkingSetDeltaBytes,
                     Steps = benchmark.Result.MoveCount,
                     Note = benchmark.Result.IsSolved
-                        ? $"Маршрут загружен. Память (managed): {FormatHelper.FormatBytes(Math.Max(0, benchmark.ManagedMemoryDeltaBytes))}"
-                        : "Решатель завершил работу без найденного маршрута."
+                        ? $""
+                        : "Маршрут не найден"
                 });
                 ClearResultsCommand.NotifyCanExecuteChanged();
 
@@ -422,17 +422,17 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                 {
                     Title = title,
                     IsSuccess = false,
-                    StatusText = "Некорректное или нерешаемое поле",
+                    StatusText = "Расстановка неразрешима",
                     Elapsed = TimeSpan.Zero,
                     ManagedMemoryDeltaBytes = 0,
                     WorkingSetDeltaBytes = 0,
                     Steps = 0,
-                    Note = ex.Message
+                    Note = ""
                 });
                 ClearResultsCommand.NotifyCanExecuteChanged();
 
                 PlaybackStatus = PlaybackStatus.None;
-                StatusText = "Текущее поле некорректно или нерешаемо для выбранного размера.";
+                StatusText = "";
             }
         }
         finally
@@ -443,7 +443,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
 
     private ISolver CreateSolver(PuzzleAlgorithmKind algorithm) => algorithm switch
     {
-        PuzzleAlgorithmKind.Bfs => new BfsSolver(),
+        PuzzleAlgorithmKind.BFS => new BfsSolver(),
         PuzzleAlgorithmKind.AStar => new AStarSolver(),
         PuzzleAlgorithmKind.IdaStar => new IdaSolver(),
         _ => new IdaBackJumpSolver()

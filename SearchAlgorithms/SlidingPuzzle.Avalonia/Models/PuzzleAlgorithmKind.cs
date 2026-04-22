@@ -2,8 +2,8 @@ namespace SlidingPuzzle.Avalonia.Models;
 
 public enum PuzzleAlgorithmKind
 {
-    Bfs,
+    BFS,
     AStar,
     IdaStar,
-    IdaStarBackjumping
+    Backjumping
 }
