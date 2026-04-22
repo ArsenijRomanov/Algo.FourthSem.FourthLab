@@ -25,7 +25,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     private int? _startColumn;
     private int? _finishRow;
     private int? _finishColumn;
-    private string _statusText = "Настройте поле и запустите решатель.";
+    private string _statusText = "";
     private bool _isBusy;
 
     public HamiltonianMainViewModel()
@@ -359,7 +359,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             {
                 Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
                 IsSuccess = false,
-                StatusText = "Отклонено пред-проверкой",
+                StatusText = "Отклонено",
                 Elapsed = TimeSpan.Zero,
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
@@ -396,14 +396,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         {
             Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
             IsSuccess = isSolved,
-            StatusText = isSolved ? "Решено" : "Путь не найден",
+            StatusText = isSolved ? "Решено" : "Гамильтонова пути не существует",
             Elapsed = stopwatch.Elapsed,
             ManagedMemoryDeltaBytes = managedDelta,
             WorkingSetDeltaBytes = 0,
             Steps = solvedSteps,
-            Note = isSolved
-                ? $"Длина пути: {solvedSteps}. .NET память: {FormatHelper.FormatBytes(managedDelta)}."
-                : "Решатель завершил работу без найденного гамильтонова пути."
+            Note = ""
         }, solvedMatrix);
     }
 
@@ -421,12 +419,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
     private static int CountSolvedSteps(int[,] solvedMatrix)
     {
-        var steps = 1;
+        var steps = 0;
         for (var row = 0; row < solvedMatrix.GetLength(0); row++)
         {
             for (var col = 0; col < solvedMatrix.GetLength(1); col++)
             {
-                if (solvedMatrix[row, col] > 0)
+                if (solvedMatrix[row, col] > 1)
                     steps++;
             }
         }

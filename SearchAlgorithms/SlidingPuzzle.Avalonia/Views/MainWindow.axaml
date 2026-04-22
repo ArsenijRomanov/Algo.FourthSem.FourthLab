@@ -15,7 +15,6 @@
         <Border Classes="card">
           <StackPanel Spacing="10">
             <TextBlock Classes="section-title" Text="Настройка поля" />
-            <TextBlock Classes="caption" Text="Правое поле автоматически подстраивается под размер окна." />
             <Grid ColumnDefinitions="*,10,*">
               <StackPanel Grid.Column="0">
                 <TextBlock Classes="caption" Text="Ширина" />
@@ -100,7 +99,7 @@
                       <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                       <WrapPanel>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}{0:0.##} ms'}" /></Border>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}.NET память: {0}'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}.Память: {0}'}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}ходов: {0}'}" /></Border>
                       </WrapPanel>
                       <TextBlock Text="{Binding StatusText}" />

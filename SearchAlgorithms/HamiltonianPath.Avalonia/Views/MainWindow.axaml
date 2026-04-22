@@ -3,7 +3,7 @@
         xmlns:controls="clr-namespace:HamiltonianPath.Avalonia.Views.Controls"
         xmlns:local="clr-namespace:HamiltonianPath.Avalonia.Converters"
         x:Class="HamiltonianPath.Avalonia.Views.MainWindow"
-        Title="Лабораторная: гамильтонов путь"
+        Title="Гамильтонов путь"
         Width="1440"
         Height="920"
         MinWidth="1180"
@@ -15,7 +15,6 @@
         <Border Classes="card">
           <StackPanel Spacing="10">
             <TextBlock Classes="section-title" Text="Настройка поля" />
-            <TextBlock Classes="caption" Text="Задайте размер, выберите инструмент, поставьте старт и финиш, затем отметьте стены." />
             <Grid ColumnDefinitions="*,10,*">
               <StackPanel Grid.Column="0">
                 <TextBlock Classes="caption" Text="Ширина" />
@@ -29,7 +28,7 @@
             <WrapPanel>
               <Button Width="170" Classes="secondary-action" Content="Применить размер" Command="{Binding ResizeBoardCommand}" />
               <Button Width="170" Classes="secondary-action" Content="Очистить стены" Command="{Binding ClearWallsCommand}" />
-              <Button Width="170" Classes="secondary-action" Content="Сбросить всё" Command="{Binding ClearAllCommand}" />
+              <Button Width="170" Classes="secondary-action" Content="Сбросить" Command="{Binding ClearAllCommand}" />
             </WrapPanel>
           </StackPanel>
         </Border>
@@ -37,7 +36,6 @@
         <Border Classes="card">
           <StackPanel Spacing="10">
             <TextBlock Classes="section-title" Text="Инструменты редактирования" />
-            <TextBlock Classes="caption" Text="Повторный клик по стартовой клетке очищает и старт, и финиш." />
             <WrapPanel Orientation="Horizontal" ItemHeight="40">
               <Button x:Name="StartToolButton" Width="120" Classes="toolbar-chip" Content="Старт" Click="StartToolButton_Click" />
               <Button x:Name="FinishToolButton" Width="120" Classes="toolbar-chip" Content="Финиш" Click="FinishToolButton_Click" />
@@ -50,7 +48,7 @@
 
         <Border Classes="card">
           <StackPanel Spacing="8">
-            <TextBlock Classes="section-title" Text="Настройки решателя" />
+            <TextBlock Classes="section-title" Text="Модификации" />
             <CheckBox Content="Эвристика Варнсдорфа" IsChecked="{Binding UseWarnsdorff}" />
             <CheckBox Content="Отсечение по связности" IsChecked="{Binding UseConnectivity}" />
             <CheckBox Content="Backjumping" IsChecked="{Binding UseBackjumping}" />
@@ -77,9 +75,9 @@
                       </DockPanel>
                       <TextBlock Text="{Binding StatusText}" />
                       <WrapPanel>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}{0:0.##} ms'}" /></Border>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}.NET память: {0}'}" /></Border>
-                        <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}шагов: {0}'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}Время: {0:0.##} ms'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}Память: {0}'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}Шагов: {0}'}" /></Border>
                       </WrapPanel>
                       <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Note}" />
                     </StackPanel>
@@ -96,7 +94,6 @@
         <Border Classes="card" Padding="16">
           <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
             <TextBlock Classes="section-title" Text="Сетка" />
-            <TextBlock Classes="caption" Text="Поле автоматически подстраивается под окно." />
           </StackPanel>
         </Border>
         <controls:HamiltonianBoardView Grid.Row="2" />
@@ -115,7 +112,7 @@
                      Text="Выполняется анализ"
                      HorizontalAlignment="Center" />
           <TextBlock Classes="caption"
-                     Text="Пожалуйста, подождите. Редактирование поля и кнопки временно заблокированы."
+                     Text="Пожалуйста, подождите."
                      TextWrapping="Wrap"
                      HorizontalAlignment="Center"
                      TextAlignment="Center" />
