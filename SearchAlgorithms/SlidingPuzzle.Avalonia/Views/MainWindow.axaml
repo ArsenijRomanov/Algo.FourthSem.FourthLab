@@ -50,7 +50,7 @@
               <TextBlock Classes="caption" Text="Режим редактирования" />
               <ToggleSwitch Classes="mode-toggle" IsChecked="{Binding IsEditMode}" />
             </StackPanel>
-            <TextBlock Classes="caption" Text="В игровом режиме стрелки и клики по соседям двигают пустую клетку. В режиме редактирования можно менять местами любые плитки перетаскиванием." />
+            <TextBlock Classes="caption" Text="" />
           </StackPanel>
         </Border>
 

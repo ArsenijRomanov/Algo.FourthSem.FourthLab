@@ -262,7 +262,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         LoadBoard(board.ToArray(), clearPlayback: true);
         StatusText = hasDepth
             ? $"Сгенерировано поле на глубине {depth} от целевого состояния."
-            : "Сгенерирована полностью случайная решаемая перестановка.";
+            : "Сгенерирована случайная перестановка.";
     }
 
     public void ResetToSolved()
@@ -288,7 +288,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         PlaybackStatus = snapshot.PlaybackStatus;
         CurrentStepIndex = snapshot.CurrentStepIndex;
         IsEditMode = snapshot.IsEditMode;
-        StatusText = "Восстановлено предыдущее состояние поля.";
+        StatusText = "";
         UndoCommand.NotifyCanExecuteChanged();
     }
 
@@ -322,7 +322,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         (_tiles[sourceIndex], _tiles[targetIndex]) = (_tiles[targetIndex], _tiles[sourceIndex]);
         RefreshTiles();
         PlaybackStatus = PlaybackStatus.ManualEdit;
-        StatusText = "Плитки поменяны местами в режиме редактирования.";
+        StatusText = "";
         return true;
     }
 
@@ -334,7 +334,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         PushUndoSnapshot();
         ApplyBlankMove(direction);
         SyncPlaybackAfterManualMove(direction);
-        StatusText = "Пустая клетка сдвинута вручную.";
+        StatusText = "";
         return true;
     }
 
@@ -413,7 +413,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                 ClearResultsCommand.NotifyCanExecuteChanged();
 
                 StatusText = benchmark.Result.IsSolved
-                    ? "Решение загружено. Используйте кнопки шагов или стрелки клавиатуры для просмотра."
+                    ? "Решение загружено."
                     : "Решение не найдено.";
             }
             catch (Exception ex)
@@ -504,7 +504,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         ApplyBlankMove(_solutionMoves[CurrentStepIndex]);
         CurrentStepIndex++;
         PlaybackStatus = PlaybackStatus.FollowingSolution;
-        StatusText = "Переход к следующему шагу маршрута.";
+        StatusText = "";
     }
 
     private void StepBackward()
@@ -517,7 +517,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         _tiles = (byte[])_solutionStates![CurrentStepIndex].Clone();
         RefreshTiles();
         PlaybackStatus = PlaybackStatus.FollowingSolution;
-        StatusText = "Переход к предыдущему шагу маршрута.";
+        StatusText = "";
     }
 
     private void SyncPlaybackAfterManualMove(Direction move)
