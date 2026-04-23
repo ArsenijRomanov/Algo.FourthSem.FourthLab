@@ -35,6 +35,7 @@ def build_summary(df):
     grouped = df.groupby(["Algorithm", "Suite", "size_label", "Depth"], as_index=False)
 
     summary = grouped.agg(
+        size_area=("size_area", "first"),
         runs=("RunIndex", "count"),
         ok_runs=("Status", lambda s: (s == "Ok").sum()),
         timeout_runs=("Status", lambda s: (s == "Timeout").sum()),
