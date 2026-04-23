@@ -112,7 +112,7 @@
                      Text="Выполняется анализ"
                      HorizontalAlignment="Center" />
           <TextBlock Classes="caption"
-                     Text="Пожалуйста, подождите или прервите выполнение."
+                     Text="Пожалуйста, подождите."
                      TextWrapping="Wrap"
                      HorizontalAlignment="Center"
                      TextAlignment="Center" />
