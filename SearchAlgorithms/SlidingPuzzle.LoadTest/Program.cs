@@ -38,7 +38,7 @@ foreach (var algorithmName in config.Algorithms)
 }
 
 var configDirectory = Path.GetDirectoryName(Path.GetFullPath(configPath)) ?? Directory.GetCurrentDirectory();
-var suiteInputs = LoadSuiteInputs(config, configDirectory);
+var suiteInputs = LoadSuiteInputs(config, configDirectory, jsonOptions);
 
 var outputPath = Path.GetFullPath(config.Output.RawResultsFile);
 var outputDir = Path.GetDirectoryName(outputPath);
@@ -169,7 +169,7 @@ static Dictionary<string, Func<ISolver>> BuildAlgorithmFactories() =>
         ["idabackjump"] = () => new IdaBackJumpSolver()
     };
 
-static List<SuiteInput> LoadSuiteInputs(LoadTestConfig config, string configDirectory)
+static List<SuiteInput> LoadSuiteInputs(LoadTestConfig config, string configDirectory, JsonSerializerOptions jsonOptions)
 {
     var list = new List<SuiteInput>(config.Suites.Count);
 
