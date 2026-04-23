@@ -2,8 +2,9 @@
   "seed": 1,
   "sizes": [
     { "width": 4, "height": 4, "cases": 20, "runs": 20 },
-    { "width": 7, "height": 7, "cases": 10, "runs": 2 },
-    { "width": 10, "height": 10, "cases": 5, "runs": 2 }
+    { "width": 5, "height": 5, "cases": 20, "runs": 20 },
+    { "width": 6, "height": 6, "cases": 20, "runs": 15 },
+    { "width": 7, "height": 7, "cases": 20, "runs": 2 }
   ],
   "algorithms": [
     "baseline",
@@ -18,7 +19,7 @@
     "solverTimeoutMs": 240000
   },
   "timeoutMs": 600000,
-  "stopOnTimeout": false,
+  "stopOnTimeout": true,
   "measureMemory": true,
   "warmupRuns": 1,
   "output": {

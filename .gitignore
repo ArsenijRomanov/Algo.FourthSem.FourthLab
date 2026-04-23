@@ -78,7 +78,6 @@ obj/
 [Ll]og/
 [Tt]est[Rr]esult*/
 TestResults/
-artifacts/
 
 *.user
 *.rsuser
