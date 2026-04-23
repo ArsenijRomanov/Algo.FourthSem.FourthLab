@@ -9,7 +9,7 @@ const string defaultConfigPath = "loadtest.config.json";
 var configPath = args.Length > 0 ? args[0] : defaultConfigPath;
 if (!File.Exists(configPath))
 {
-    Console.Error.WriteLine($"Config file not found: {configPath}");
+    ConsoleUi.WriteLine($"Config file not found: {configPath}", ConsoleColor.Red);
     Environment.Exit(1);
     return;
 }
@@ -45,17 +45,31 @@ if (!string.IsNullOrWhiteSpace(outputDir))
 await using var writer = new StreamWriter(outputPath, false);
 var runStartedUtc = DateTime.UtcNow;
 var rowCount = 0;
+var timeoutRows = 0;
+var errorRows = 0;
+var okRows = 0;
+
+ConsoleUi.WriteLine("=== HamiltonianPath.LoadTest started ===", ConsoleColor.Cyan);
+ConsoleUi.WriteLine($"Config: {Path.GetFullPath(configPath)}", ConsoleColor.DarkCyan);
+ConsoleUi.WriteLine($"Output: {outputPath}", ConsoleColor.DarkCyan);
+ConsoleUi.WriteLine($"Algorithms: {string.Join(", ", config.Algorithms)}", ConsoleColor.DarkCyan);
 
 foreach (var size in config.Sizes)
 {
+    ConsoleUi.WriteLine($"[SIZE] {size.Width}x{size.Height} | cases={size.Cases}, runs={size.Runs}", ConsoleColor.Cyan);
     var cases = GenerateFeasibleCases(size, config);
-    Console.WriteLine($"{size.Width}x{size.Height}: {cases.Count} feasible cases generated.");
+    ConsoleUi.WriteLine($"[SIZE] {size.Width}x{size.Height} -> feasible cases generated: {cases.Count}", ConsoleColor.Green);
 
     foreach (var generatedCase in cases)
     {
+        ConsoleUi.WriteLine(
+            $"  [CASE {generatedCase.CaseId}] start=({generatedCase.Start.X},{generatedCase.Start.Y}) finish=({generatedCase.Finish.X},{generatedCase.Finish.Y})",
+            ConsoleColor.Gray);
+
         foreach (var algorithmName in config.Algorithms)
         {
             var factory = algorithmFactories[algorithmName];
+            ConsoleUi.WriteLine($"    [ALG] {algorithmName}", ConsoleColor.Yellow);
 
             for (var runIndex = 1; runIndex <= size.Runs; runIndex++)
             {
@@ -85,11 +99,28 @@ foreach (var size in config.Sizes)
 
                 await writer.WriteLineAsync(JsonSerializer.Serialize(row));
                 rowCount++;
+                switch (result.Status)
+                {
+                    case RunStatus.Ok:
+                        okRows++;
+                        break;
+                    case RunStatus.Timeout:
+                        timeoutRows++;
+                        break;
+                    case RunStatus.Error:
+                        errorRows++;
+                        break;
+                }
+
+                PrintRunResult(size, generatedCase, algorithmName, runIndex, size.Runs, result);
 
                 if (result.Status == RunStatus.Timeout && config.StopOnTimeout)
                 {
                     await writer.FlushAsync();
-                    Console.WriteLine($"Stopped by timeout. Rows written: {rowCount}. File: {outputPath}");
+                    ConsoleUi.WriteLine("[STOP] stopOnTimeout=true and timeout encountered. Benchmark stopped.", ConsoleColor.Red);
+                    ConsoleUi.WriteLine(
+                        $"[TOTAL] rows={rowCount}, ok={okRows}, timeout={timeoutRows}, error={errorRows}. File: {outputPath}",
+                        ConsoleColor.Red);
                     return;
                 }
             }
@@ -98,7 +129,9 @@ foreach (var size in config.Sizes)
 }
 
 await writer.FlushAsync();
-Console.WriteLine($"Done. Rows written: {rowCount}. File: {outputPath}");
+ConsoleUi.WriteLine("=== HamiltonianPath.LoadTest finished ===", ConsoleColor.Cyan);
+ConsoleUi.WriteLine($"[TOTAL] rows={rowCount}, ok={okRows}, timeout={timeoutRows}, error={errorRows}", ConsoleColor.Cyan);
+ConsoleUi.WriteLine($"Results file: {outputPath}", ConsoleColor.Cyan);
 
 static Dictionary<string, Func<HamiltonianPathSolver>> BuildAlgorithmFactories() =>
     new(StringComparer.OrdinalIgnoreCase)
@@ -210,6 +243,47 @@ static SingleRunMeasurement RunSingle(
     {
         sw.Stop();
         return new SingleRunMeasurement(RunStatus.Error, false, sw.Elapsed.TotalMilliseconds, 0, ex.GetType().Name + ": " + ex.Message);
+    }
+}
+
+static void PrintRunResult(
+    SizeConfig size,
+    GeneratedCase generatedCase,
+    string algorithm,
+    int runIndex,
+    int totalRuns,
+    SingleRunMeasurement result)
+{
+    var prefix = $"      [{size.Width}x{size.Height}] case={generatedCase.CaseId} alg={algorithm} run={runIndex}/{totalRuns}";
+    var details = $"time={result.ElapsedMs:F3} ms";
+    var mem = $", memDelta={result.MemoryDeltaBytes} B";
+
+    switch (result.Status)
+    {
+        case RunStatus.Ok:
+            ConsoleUi.WriteLine(
+                $"{prefix} -> OK ({(result.Solved ? "solved" : "not solved")}, {details}{mem})",
+                ConsoleColor.Green);
+            break;
+
+        case RunStatus.Timeout:
+            ConsoleUi.WriteLine($"{prefix} -> TIMEOUT ({details})", ConsoleColor.Magenta);
+            break;
+
+        case RunStatus.Error:
+            ConsoleUi.WriteLine($"{prefix} -> ERROR ({result.Error ?? "unknown error"})", ConsoleColor.Red);
+            break;
+    }
+}
+
+internal static class ConsoleUi
+{
+    public static void WriteLine(string message, ConsoleColor color)
+    {
+        var previousColor = Console.ForegroundColor;
+        Console.ForegroundColor = color;
+        Console.WriteLine(message);
+        Console.ForegroundColor = previousColor;
     }
 }
 
