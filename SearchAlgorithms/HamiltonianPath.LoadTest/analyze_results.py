@@ -121,6 +121,82 @@ def plot_metrics(summary, out_dir: Path) -> None:
     print(f"Saved graph: {mem_path}")
 
 
+def plot_distribution_charts(df, out_dir: Path) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    size_order = sorted(
+        df["size_label"].unique(),
+        key=lambda s: int(s.split("x")[0]) * int(s.split("x")[1]),
+    )
+    algorithms = sorted(df["Algorithm"].unique())
+    metrics = [
+        ("ElapsedMs", "Runtime distribution by size", "Runtime (ms)", "time"),
+        ("MemoryDeltaBytes", "Memory distribution by size", "Memory delta (bytes)", "memory"),
+    ]
+
+    for metric, title, ylabel, filename_prefix in metrics:
+        fig, axes = plt.subplots(
+            len(algorithms),
+            1,
+            figsize=(max(10, len(size_order) * 1.3), 4 * len(algorithms)),
+            sharex=True,
+        )
+        if len(algorithms) == 1:
+            axes = [axes]
+
+        for ax, algorithm in zip(axes, algorithms):
+            part = df[df["Algorithm"] == algorithm]
+            values_by_size = []
+
+            for size in size_order:
+                values = part.loc[part["size_label"] == size, metric].dropna().tolist()
+                values_by_size.append(values)
+
+            ax.boxplot(values_by_size, labels=size_order, showfliers=False)
+            ax.set_title(f"{algorithm}")
+            ax.set_ylabel(ylabel)
+            ax.grid(True, alpha=0.25, axis="y")
+
+        axes[-1].set_xlabel("Board size")
+        fig.suptitle(title)
+        fig.tight_layout(rect=[0, 0.02, 1, 0.96])
+        boxplot_path = out_dir / f"{filename_prefix}_boxplot_by_size.png"
+        fig.savefig(boxplot_path, dpi=150)
+        plt.close(fig)
+
+        fig, axes = plt.subplots(
+            len(algorithms),
+            1,
+            figsize=(max(10, len(size_order) * 1.3), 4 * len(algorithms)),
+            sharex=True,
+        )
+        if len(algorithms) == 1:
+            axes = [axes]
+
+        for ax, algorithm in zip(axes, algorithms):
+            part = df[df["Algorithm"] == algorithm]
+            for x_pos, size in enumerate(size_order, start=1):
+                y_values = part.loc[part["size_label"] == size, metric].dropna()
+                x_values = [x_pos] * len(y_values)
+                ax.scatter(x_values, y_values, alpha=0.6, s=20)
+
+            ax.set_title(f"{algorithm}")
+            ax.set_ylabel(ylabel)
+            ax.grid(True, alpha=0.25, axis="y")
+            ax.set_xlim(0.5, len(size_order) + 0.5)
+            ax.set_xticks(range(1, len(size_order) + 1), size_order)
+
+        axes[-1].set_xlabel("Board size")
+        fig.suptitle(f"{title} (scatter columns)")
+        fig.tight_layout(rect=[0, 0.02, 1, 0.96])
+        scatter_path = out_dir / f"{filename_prefix}_scatter_by_size.png"
+        fig.savefig(scatter_path, dpi=150)
+        plt.close(fig)
+
+        print(f"Saved graph: {boxplot_path}")
+        print(f"Saved graph: {scatter_path}")
+
+
 def main() -> None:
     args = parse_args()
 
@@ -140,6 +216,7 @@ def main() -> None:
     summary = build_summary(df)
     save_table(summary, args.out_dir)
     plot_metrics(summary, args.out_dir)
+    plot_distribution_charts(df, args.out_dir)
 
 
 if __name__ == "__main__":
