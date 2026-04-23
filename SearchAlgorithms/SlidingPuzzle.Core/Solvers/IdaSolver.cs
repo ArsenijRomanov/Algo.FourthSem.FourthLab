@@ -10,7 +10,7 @@ public class IdaSolver : ISolver
 {
     private const int Found = -1;
 
-    public SolveResult Solve(PuzzleBoard board)
+    public SolveResult Solve(PuzzleBoard board, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(board);
 
@@ -22,7 +22,8 @@ public class IdaSolver : ISolver
 
         while (true)
         {
-            var nextBound = Search(workBoard, 0, bound, null, pathVisited, path);
+            cancellationToken.ThrowIfCancellationRequested();
+            var nextBound = Search(workBoard, 0, bound, null, pathVisited, path, cancellationToken);
 
             if (nextBound == Found)
                 return new SolveResult(path.ToArray(), true);
@@ -40,8 +41,10 @@ public class IdaSolver : ISolver
         int bound,
         Direction? previousDirection,
         HashSet<PuzzleBoardKey> pathVisited,
-        List<Direction> path)
+        List<Direction> path,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var score = stepCount + board.TotalManhattanDistance;
         if (score > bound)
             return score;
@@ -74,7 +77,8 @@ public class IdaSolver : ISolver
                 bound,
                 dir,
                 pathVisited,
-                path);
+                path,
+                cancellationToken);
 
             if (searchResult == Found)
                 return Found;

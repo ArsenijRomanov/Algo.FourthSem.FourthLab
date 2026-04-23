@@ -36,6 +36,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     private List<byte[]>? _solutionStates;
     private int _currentStepIndex;
     private byte[] _tiles = [];
+    private CancellationTokenSource? _runCancellationTokenSource;
 
     public SlidingPuzzleMainViewModel(BenchmarkService benchmarkService, FileStorageService fileStorageService)
     {
@@ -52,6 +53,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         UndoCommand = new RelayCommand(Undo, () => _undoStack.Count > 0);
         ClearResultsCommand = new RelayCommand(ClearResults, () => Results.Count > 0);
         RunCurrentCommand = new AsyncRelayCommand(RunCurrentAsync, () => !IsBusy);
+        CancelRunCommand = new RelayCommand(CancelRun, () => IsBusy);
         StepForwardCommand = new RelayCommand(StepForward, () => CanStepForward);
         StepBackwardCommand = new RelayCommand(StepBackward, () => CanStepBackward);
         MoveUpCommand = new RelayCommand(() => TryManualMove(Direction.Up), () => !IsBusy && !IsEditMode);
@@ -72,6 +74,7 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
     public RelayCommand UndoCommand { get; }
     public RelayCommand ClearResultsCommand { get; }
     public AsyncRelayCommand RunCurrentCommand { get; }
+    public RelayCommand CancelRunCommand { get; }
     public RelayCommand StepForwardCommand { get; }
     public RelayCommand StepBackwardCommand { get; }
     public RelayCommand MoveUpCommand { get; }
@@ -113,13 +116,17 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
             if (SetProperty(ref _isBusy, value))
             {
                 RunCurrentCommand.NotifyCanExecuteChanged();
+                CancelRunCommand.NotifyCanExecuteChanged();
                 MoveUpCommand.NotifyCanExecuteChanged();
                 MoveDownCommand.NotifyCanExecuteChanged();
                 MoveLeftCommand.NotifyCanExecuteChanged();
                 MoveRightCommand.NotifyCanExecuteChanged();
+                OnPropertyChanged(nameof(IsInteractionEnabled));
             }
         }
     }
+
+    public bool IsInteractionEnabled => !IsBusy;
 
     public bool IsEditMode
     {
@@ -370,6 +377,8 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
 
     private async Task RunCurrentAsync()
     {
+        _runCancellationTokenSource?.Dispose();
+        _runCancellationTokenSource = new CancellationTokenSource();
         IsBusy = true;
 
         try
@@ -392,8 +401,8 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                 {
                     var board = new PuzzleBoard(snapshot, (byte)height, (byte)width);
                     var solver = CreateSolver(SelectedAlgorithm);
-                    return _benchmarkService.Run(() => solver.Solve(board));
-                });
+                    return _benchmarkService.Run(() => solver.Solve(board, _runCancellationTokenSource.Token));
+                }, _runCancellationTokenSource.Token);
 
                 ApplySolveResult(benchmark.Result);
 
@@ -416,7 +425,11 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
                     ? "Решение загружено."
                     : "Решение не найдено.";
             }
-            catch (Exception ex)
+            catch (OperationCanceledException)
+            {
+                StatusText = "Выполнение алгоритма прервано.";
+            }
+            catch (Exception)
             {
                 Results.Insert(0, new AlgorithmRunRecord
                 {
@@ -438,8 +451,13 @@ public sealed class SlidingPuzzleMainViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            _runCancellationTokenSource?.Dispose();
+            _runCancellationTokenSource = null;
         }
     }
+
+    private void CancelRun()
+        => _runCancellationTokenSource?.Cancel();
 
     private ISolver CreateSolver(PuzzleAlgorithmKind algorithm) => algorithm switch
     {

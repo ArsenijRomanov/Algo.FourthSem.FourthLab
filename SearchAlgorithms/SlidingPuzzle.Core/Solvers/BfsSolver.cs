@@ -8,7 +8,7 @@ namespace SlidingPuzzle.Core.Solvers;
 
 public class BfsSolver : ISolver
 {
-    public SolveResult Solve(PuzzleBoard board)
+    public SolveResult Solve(PuzzleBoard board, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(board);
         
@@ -21,6 +21,7 @@ public class BfsSolver : ISolver
 
         while (queue.Count != 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var curState = queue.Dequeue();
             if (curState.IsGoal)
                 return new SolveResult(PathBuilder.Build(parents, curState), true);

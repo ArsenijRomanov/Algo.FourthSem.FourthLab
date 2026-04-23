@@ -5,5 +5,5 @@ namespace SlidingPuzzle.Core.Abstractions;
 
 public interface ISolver
 {
-    SolveResult Solve(PuzzleBoard board);
+    SolveResult Solve(PuzzleBoard board, CancellationToken cancellationToken = default);
 }

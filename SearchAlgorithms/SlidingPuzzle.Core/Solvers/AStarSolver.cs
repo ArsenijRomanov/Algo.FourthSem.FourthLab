@@ -8,7 +8,7 @@ namespace SlidingPuzzle.Core.Solvers;
 
 public class AStarSolver : ISolver
 {
-    public SolveResult Solve(PuzzleBoard board)
+    public SolveResult Solve(PuzzleBoard board, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(board);
 
@@ -21,6 +21,7 @@ public class AStarSolver : ISolver
 
         while (openSet.Count != 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var curState = openSet.Dequeue();
 
             if (closed.Contains(curState.Board))

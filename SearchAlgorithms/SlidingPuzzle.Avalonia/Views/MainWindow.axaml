@@ -9,7 +9,8 @@
         MinWidth="1220"
         MinHeight="820"
         KeyDown="Window_KeyDown">
-  <Grid ColumnDefinitions="390,18,*" Margin="18">
+  <Grid>
+    <Grid ColumnDefinitions="390,18,*" Margin="18" IsEnabled="{Binding IsInteractionEnabled}">
     <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="16">
         <Border Classes="card">
@@ -141,5 +142,30 @@
         </Border>
       </Expander>
     </Grid>
+    </Grid>
+
+    <Border IsVisible="{Binding IsBusy}"
+            Background="#AA12141A"
+            ZIndex="99">
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              Classes="card"
+              Padding="20">
+        <StackPanel Spacing="12" Width="300">
+          <TextBlock Classes="section-title"
+                     Text="Выполняется поиск решения"
+                     HorizontalAlignment="Center" />
+          <TextBlock Classes="caption"
+                     Text="Пожалуйста, подождите или прервите выполнение."
+                     TextWrapping="Wrap"
+                     HorizontalAlignment="Center"
+                     TextAlignment="Center" />
+          <ProgressBar IsIndeterminate="True" Height="8" />
+          <Button Content="Прервать"
+                  Classes="secondary-action"
+                  Command="{Binding CancelRunCommand}" />
+        </StackPanel>
+      </Border>
+    </Border>
   </Grid>
 </Window>

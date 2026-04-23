@@ -10,7 +10,7 @@ public class IdaBackJumpSolver : ISolver
 {
     private readonly record struct SearchResult(int NextBound, int JumpDepth, bool IsFound);
 
-    public SolveResult Solve(PuzzleBoard board)
+    public SolveResult Solve(PuzzleBoard board, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(board);
 
@@ -22,6 +22,7 @@ public class IdaBackJumpSolver : ISolver
 
         while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var searchResult = Search(
                 workBoard,
                 stepCount: 0,
@@ -29,7 +30,8 @@ public class IdaBackJumpSolver : ISolver
                 previousDirection: null,
                 lastChoiceDepth: 0,
                 pathVisited,
-                path);
+                path,
+                cancellationToken);
 
             if (searchResult.IsFound)
                 return new SolveResult(path.ToArray(), true);
@@ -48,8 +50,10 @@ public class IdaBackJumpSolver : ISolver
         Direction? previousDirection,
         int lastChoiceDepth,
         HashSet<PuzzleBoardKey> pathVisited,
-        List<Direction> path)
+        List<Direction> path,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var score = stepCount + board.TotalManhattanDistance;
 
         if (score > bound)
@@ -84,7 +88,8 @@ public class IdaBackJumpSolver : ISolver
                 dir,
                 nextLastChoiceDepth,
                 pathVisited,
-                path);
+                path,
+                cancellationToken);
 
             if (searchResult.IsFound)
                 return searchResult;
