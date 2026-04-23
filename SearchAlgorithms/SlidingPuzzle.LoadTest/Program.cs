@@ -182,7 +182,7 @@ static List<SuiteInput> LoadSuiteInputs(LoadTestConfig config, string configDire
         if (!File.Exists(path))
             throw new FileNotFoundException($"Cases file not found: {path}");
 
-        var file = JsonSerializer.Deserialize<CaseFile>(File.ReadAllText(path))
+        var file = JsonSerializer.Deserialize<CaseFile>(File.ReadAllText(path), jsonOptions)
                    ?? throw new InvalidOperationException($"Cannot parse cases file: {path}");
 
         if (file.Boards.Count == 0)
