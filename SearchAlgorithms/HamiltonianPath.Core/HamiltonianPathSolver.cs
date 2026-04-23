@@ -15,7 +15,7 @@ public class HamiltonianPathSolver(
     private ICommitValidator _commitValidator = commitValidator ?? throw new ArgumentNullException(nameof(commitValidator));
     private bool _backJumpMode = backJumpMode;
 
-    public bool Solve(Board board)
+    public bool Solve(Board board, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(board);
 
@@ -27,6 +27,7 @@ public class HamiltonianPathSolver(
 
         while (stack.Count != 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var curState = stack.Peek();
 
             if (curState.Point == board.Finish && stack.Count == board.FreePlacesCount)

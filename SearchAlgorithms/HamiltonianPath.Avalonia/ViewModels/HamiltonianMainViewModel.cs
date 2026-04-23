@@ -27,6 +27,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     private int? _finishColumn;
     private string _statusText = "";
     private bool _isBusy;
+    private CancellationTokenSource? _runCancellationTokenSource;
 
     public HamiltonianMainViewModel()
     {
@@ -40,6 +41,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         ClearResultsCommand = new RelayCommand(ClearResults);
         RunCurrentCommand = new AsyncRelayCommand(RunCurrentAsync, () => !IsBusy);
         RunBaselineAndCurrentCommand = new AsyncRelayCommand(RunBaselineAndCurrentAsync, () => !IsBusy);
+        CancelRunCommand = new RelayCommand(CancelRun, () => IsBusy);
 
         RebuildCells();
     }
@@ -54,6 +56,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     public RelayCommand ClearResultsCommand { get; }
     public AsyncRelayCommand RunCurrentCommand { get; }
     public AsyncRelayCommand RunBaselineAndCurrentCommand { get; }
+    public RelayCommand CancelRunCommand { get; }
 
     public int BoardWidth
     {
@@ -118,6 +121,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             {
                 RunCurrentCommand.NotifyCanExecuteChanged();
                 RunBaselineAndCurrentCommand.NotifyCanExecuteChanged();
+                CancelRunCommand.NotifyCanExecuteChanged();
                 OnPropertyChanged(nameof(IsInteractionEnabled));
             }
         }
@@ -253,13 +257,22 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
     private async Task RunCurrentAsync()
     {
+        var pathSnapshot = CapturePathSnapshot();
+        _runCancellationTokenSource?.Dispose();
+        _runCancellationTokenSource = new CancellationTokenSource();
         IsBusy = true;
         try
         {
             AlgorithmRunRecord result;
             try
             {
-                result = await SolveCurrentConfigurationAsync();
+                result = await SolveCurrentConfigurationAsync(_runCancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                RestorePathSnapshot(pathSnapshot);
+                StatusText = "Выполнение прервано пользователем.";
+                return;
             }
             catch (Exception ex)
             {
@@ -272,18 +285,29 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            _runCancellationTokenSource?.Dispose();
+            _runCancellationTokenSource = null;
         }
     }
 
     private async Task RunBaselineAndCurrentAsync()
     {
+        var pathSnapshot = CapturePathSnapshot();
+        _runCancellationTokenSource?.Dispose();
+        _runCancellationTokenSource = new CancellationTokenSource();
         IsBusy = true;
         try
         {
             AlgorithmRunRecord baseline;
             try
             {
-                baseline = await SolveConfigurationAsync(false, false, false);
+                baseline = await SolveConfigurationAsync(false, false, false, _runCancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                RestorePathSnapshot(pathSnapshot);
+                StatusText = "Выполнение прервано пользователем.";
+                return;
             }
             catch (Exception ex)
             {
@@ -295,7 +319,13 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             AlgorithmRunRecord current;
             try
             {
-                current = await SolveCurrentConfigurationAsync();
+                current = await SolveCurrentConfigurationAsync(_runCancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                RestorePathSnapshot(pathSnapshot);
+                StatusText = "Выполнение прервано пользователем.";
+                return;
             }
             catch (Exception ex)
             {
@@ -310,13 +340,15 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+            _runCancellationTokenSource?.Dispose();
+            _runCancellationTokenSource = null;
         }
     }
 
-    private Task<AlgorithmRunRecord> SolveCurrentConfigurationAsync()
-        => SolveConfigurationAsync(UseWarnsdorff, UseConnectivity, UseBackjumping);
+    private Task<AlgorithmRunRecord> SolveCurrentConfigurationAsync(CancellationToken cancellationToken)
+        => SolveConfigurationAsync(UseWarnsdorff, UseConnectivity, UseBackjumping, cancellationToken);
 
-    private async Task<AlgorithmRunRecord> SolveConfigurationAsync(bool warnsdorff, bool connectivity, bool backjumping)
+    private async Task<AlgorithmRunRecord> SolveConfigurationAsync(bool warnsdorff, bool connectivity, bool backjumping, CancellationToken cancellationToken)
     {
         ClearSolutionPath();
 
@@ -341,7 +373,9 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
         var start = new Point(_startColumn.Value, _startRow.Value);
         var finish = new Point(_finishColumn.Value, _finishRow.Value);
-        var computation = await Task.Run(() => ComputeSolve(warnsdorff, connectivity, backjumping, matrix, start, finish));
+        var computation = await Task.Run(
+            () => ComputeSolve(warnsdorff, connectivity, backjumping, matrix, start, finish, cancellationToken),
+            cancellationToken);
 
         if (computation.SolvedMatrix is not null)
             ApplySolution(computation.SolvedMatrix);
@@ -349,8 +383,9 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         return computation.Record;
     }
 
-    private static SolveComputation ComputeSolve(bool warnsdorff, bool connectivity, bool backjumping, int[,] matrix, Point start, Point finish)
+    private static SolveComputation ComputeSolve(bool warnsdorff, bool connectivity, bool backjumping, int[,] matrix, Point start, Point finish, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var board = new Board((int[,])matrix.Clone(), start, finish);
 
         if (!HamiltonianPathSolver.CanHaveHamiltonianPath(board))
@@ -382,7 +417,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         var managedBefore = GC.GetTotalMemory(true);
         var stopwatch = Stopwatch.StartNew();
         var solver = new HamiltonianPathSolver(chooseDirection, commitValidator, backjumping);
-        var isSolved = solver.Solve(board);
+        var isSolved = solver.Solve(board, cancellationToken);
         stopwatch.Stop();
         var managedAfter = GC.GetTotalMemory(true);
         var managedDelta = Math.Max(0, managedAfter - managedBefore);
@@ -455,6 +490,23 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
         RefreshPathLinks();
     }
+
+    private Dictionary<(int Row, int Column), int> CapturePathSnapshot()
+        => Cells.ToDictionary(static cell => (cell.Row, cell.Column), static cell => cell.PathIndex);
+
+    private void RestorePathSnapshot(Dictionary<(int Row, int Column), int> snapshot)
+    {
+        foreach (var cell in Cells)
+        {
+            if (snapshot.TryGetValue((cell.Row, cell.Column), out var pathIndex))
+                cell.PathIndex = pathIndex;
+        }
+
+        RefreshPathLinks();
+    }
+
+    private void CancelRun()
+        => _runCancellationTokenSource?.Cancel();
 
     private void RebuildCells()
     {

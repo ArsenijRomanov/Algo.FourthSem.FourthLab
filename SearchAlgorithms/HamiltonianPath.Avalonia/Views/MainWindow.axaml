@@ -112,11 +112,14 @@
                      Text="Выполняется анализ"
                      HorizontalAlignment="Center" />
           <TextBlock Classes="caption"
-                     Text="Пожалуйста, подождите."
+                     Text="Пожалуйста, подождите или прервите выполнение."
                      TextWrapping="Wrap"
                      HorizontalAlignment="Center"
                      TextAlignment="Center" />
           <ProgressBar IsIndeterminate="True" Height="8" />
+          <Button Content="Прервать"
+                  Classes="secondary-action"
+                  Command="{Binding CancelRunCommand}" />
         </StackPanel>
       </Border>
     </Border>
