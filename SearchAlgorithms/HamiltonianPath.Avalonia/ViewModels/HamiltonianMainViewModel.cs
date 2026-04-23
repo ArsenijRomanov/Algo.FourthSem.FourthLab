@@ -238,7 +238,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
     {
         ClearStartOnly();
         ClearFinishOnly();
-        StatusText = "Старт и финиш очищены.";
+        StatusText = "";
         RefreshPathLinks();
     }
 
