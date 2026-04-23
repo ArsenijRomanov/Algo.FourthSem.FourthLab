@@ -1,0 +1,27 @@
+{
+  "seed": 42,
+  "sizes": [
+    { "width": 8, "height": 8, "cases": 20, "runs": 20 },
+    { "width": 10, "height": 10, "cases": 15, "runs": 12 },
+    { "width": 12, "height": 12, "cases": 10, "runs": 8 }
+  ],
+  "algorithms": [
+    "baseline",
+    "warnsdorff_heuristic",
+    "connectivity_pruning",
+    "backjump_backtracking"
+  ],
+  "precheck": {
+    "enabled": true,
+    "maxAttemptsPerCase": 300,
+    "verifyWithFastSolver": true,
+    "solverTimeoutMs": 250
+  },
+  "timeoutMs": 5000,
+  "stopOnTimeout": false,
+  "measureMemory": true,
+  "warmupRuns": 1,
+  "output": {
+    "rawResultsFile": "artifacts/hamiltonian-loadtest-results.jsonl"
+  }
+}
