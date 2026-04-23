@@ -48,6 +48,7 @@ var rowCount = 0;
 var timeoutRows = 0;
 var errorRows = 0;
 var okRows = 0;
+var disabledAlgorithms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 ConsoleUi.WriteLine("=== HamiltonianPath.LoadTest started ===", ConsoleColor.Cyan);
 ConsoleUi.WriteLine($"Config: {Path.GetFullPath(configPath)}", ConsoleColor.DarkCyan);
@@ -68,6 +69,12 @@ foreach (var size in config.Sizes)
 
         foreach (var algorithmName in config.Algorithms)
         {
+            if (disabledAlgorithms.Contains(algorithmName))
+            {
+                ConsoleUi.WriteLine($"    [ALG] {algorithmName} -> skipped (disabled after timeout)", ConsoleColor.DarkYellow);
+                continue;
+            }
+
             var factory = algorithmFactories[algorithmName];
             ConsoleUi.WriteLine($"    [ALG] {algorithmName}", ConsoleColor.Yellow);
 
@@ -116,12 +123,11 @@ foreach (var size in config.Sizes)
 
                 if (result.Status == RunStatus.Timeout && config.StopOnTimeout)
                 {
-                    await writer.FlushAsync();
-                    ConsoleUi.WriteLine("[STOP] stopOnTimeout=true and timeout encountered. Benchmark stopped.", ConsoleColor.Red);
+                    disabledAlgorithms.Add(algorithmName);
                     ConsoleUi.WriteLine(
-                        $"[TOTAL] rows={rowCount}, ok={okRows}, timeout={timeoutRows}, error={errorRows}. File: {outputPath}",
-                        ConsoleColor.Red);
-                    return;
+                        $"    [ALG DISABLED] {algorithmName} exceeded timeout and will be skipped in all next cases/sizes.",
+                        ConsoleColor.Magenta);
+                    break;
                 }
             }
         }
@@ -131,6 +137,12 @@ foreach (var size in config.Sizes)
 await writer.FlushAsync();
 ConsoleUi.WriteLine("=== HamiltonianPath.LoadTest finished ===", ConsoleColor.Cyan);
 ConsoleUi.WriteLine($"[TOTAL] rows={rowCount}, ok={okRows}, timeout={timeoutRows}, error={errorRows}", ConsoleColor.Cyan);
+if (disabledAlgorithms.Count > 0)
+{
+    ConsoleUi.WriteLine(
+        $"Disabled algorithms due to timeout: {string.Join(", ", disabledAlgorithms)}",
+        ConsoleColor.Magenta);
+}
 ConsoleUi.WriteLine($"Results file: {outputPath}", ConsoleColor.Cyan);
 
 static Dictionary<string, Func<HamiltonianPathSolver>> BuildAlgorithmFactories() =>

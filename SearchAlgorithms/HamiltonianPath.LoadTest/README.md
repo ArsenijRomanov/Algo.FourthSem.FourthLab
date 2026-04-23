@@ -20,3 +20,5 @@ The runner writes JSONL rows with fields:
 - `Algorithm`, `RunIndex`
 - `Status` (`Ok`, `Timeout`, `Error`)
 - `Solved`, `ElapsedMs`, `MemoryDeltaBytes`, `Error`
+
+If `stopOnTimeout=true`, the runner disables only the timed-out algorithm for all remaining cases/sizes and continues benchmarking other algorithms.
