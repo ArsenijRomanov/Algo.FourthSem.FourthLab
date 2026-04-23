@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SearchAlgorithms.UI.Shared"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Debug", "Debug\Debug.csproj", "{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HamiltonianPath.LoadTest", "HamiltonianPath.LoadTest\HamiltonianPath.LoadTest.csproj", "{E70FC0EA-2A95-4872-AC60-B6857C28E52E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE73AFF0-9B0E-4EEF-AE7E-7CE2138CEFD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E70FC0EA-2A95-4872-AC60-B6857C28E52E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E70FC0EA-2A95-4872-AC60-B6857C28E52E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E70FC0EA-2A95-4872-AC60-B6857C28E52E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E70FC0EA-2A95-4872-AC60-B6857C28E52E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
