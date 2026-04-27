@@ -13,7 +13,7 @@
       "height": 4,
       "depth": 10,
       "casesFile": "Data/depth-10.json",
-      "runs": 20
+      "runs": 5
     },
     {
       "name": "4x4-depth-20",
@@ -21,7 +21,7 @@
       "height": 4,
       "depth": 20,
       "casesFile": "Data/depth-20.json",
-      "runs": 10
+      "runs": 5
     },
     {
       "name": "4x4-depth-30",

@@ -7,33 +7,45 @@ using HamiltonianPath.Core.Helpers;
 namespace HamiltonianPath.Core;
 
 public class HamiltonianPathSolver(
-    IChooseDirection chooseDirection, 
+    IChooseDirection chooseDirection,
     ICommitValidator commitValidator,
     bool backJumpMode)
 {
-    private IChooseDirection _chooseDirection = chooseDirection ?? throw new ArgumentNullException(nameof(chooseDirection));
-    private ICommitValidator _commitValidator = commitValidator ?? throw new ArgumentNullException(nameof(commitValidator));
-    private bool _backJumpMode = backJumpMode;
+    private readonly IChooseDirection _chooseDirection =
+        chooseDirection ?? throw new ArgumentNullException(nameof(chooseDirection));
 
-    public bool Solve(Board board, CancellationToken cancellationToken = default)
+    private readonly ICommitValidator _commitValidator =
+        commitValidator ?? throw new ArgumentNullException(nameof(commitValidator));
+
+    private readonly bool _backJumpMode = backJumpMode;
+
+    public HamiltonianSolveResult Solve(Board board, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(board);
 
         var stack = new Stack<PathState>();
         var startState = new PathState(board.Start, board.CalculateDirsMask(board.Start));
         stack.Push(startState);
-
         board.SetVisited(board.Start);
+
+        long solutionCount = 0;
+        Point[]? firstSolution = null;
 
         while (stack.Count != 0)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             var curState = stack.Peek();
 
             if (curState.Point == board.Finish && stack.Count == board.FreePlacesCount)
             {
-                BuildSolutionPath(board, stack);
-                return true;
+                solutionCount++;
+
+                if (firstSolution is null)
+                    firstSolution = CapturePath(stack);
+
+                Backtrack(board, stack);
+                continue;
             }
 
             if (curState.AvailableDirectionsCount == 0)
@@ -44,13 +56,7 @@ public class HamiltonianPathSolver(
 
             curState = stack.Pop();
 
-            PathState nextState;
-            DirectionFlag chosenDir;
-            try
-            {
-                (nextState, chosenDir) = _chooseDirection.GetNextPathState(board, curState);
-            }
-            catch (ArgumentException)
+            if (!_chooseDirection.TryGetNextPathState(board, curState, out var nextState, out var chosenDir))
             {
                 curState.DirsMask = DirectionFlag.None;
                 stack.Push(curState);
@@ -58,29 +64,18 @@ public class HamiltonianPathSolver(
             }
 
             curState.RemoveDirection(chosenDir);
-
             stack.Push(curState);
 
-            bool isValidStep;
-            try
-            {
-                isValidStep = _commitValidator.Validate(new SearchContext(board, stack.Count), nextState);
-            }
-            catch (ArgumentException)
-            {
-                isValidStep = false;
-            }
-
-            if (!isValidStep)
+            if (!_commitValidator.Validate(new SearchContext(board, stack.Count), nextState))
                 continue;
 
             board.SetVisited(nextState.Point);
             stack.Push(nextState);
         }
 
-        return false;
+        return new HamiltonianSolveResult(solutionCount, firstSolution);
     }
-    
+
     public static bool CanHaveHamiltonianPath(Board board)
     {
         ArgumentNullException.ThrowIfNull(board);
@@ -131,13 +126,11 @@ public class HamiltonianPathSolver(
                     case 0:
                         return false;
                     case 1:
-                    {
                         leafCount++;
 
                         if (point != board.Start && point != board.Finish)
                             return false;
                         break;
-                    }
                 }
             }
         }
@@ -166,6 +159,37 @@ public class HamiltonianPathSolver(
         }
 
         return true;
+    }
+
+    public static void ApplyPathToBoard(Board board, IReadOnlyList<Point> path)
+    {
+        ArgumentNullException.ThrowIfNull(board);
+        ArgumentNullException.ThrowIfNull(path);
+
+        for (var y = 0; y < board.Height; y++)
+        {
+            for (var x = 0; x < board.Width; x++)
+            {
+                var point = new Point(x, y);
+                if (board[point] > 0)
+                    board.Unmark(point);
+            }
+        }
+
+        for (var i = 0; i < path.Count; i++)
+            board.Mark(path[i], i + 1);
+    }
+
+    private static Point[] CapturePath(Stack<PathState> stack)
+    {
+        var states = stack.ToArray();
+        Array.Reverse(states);
+
+        var result = new Point[states.Length];
+        for (var i = 0; i < states.Length; i++)
+            result[i] = states[i].Point;
+
+        return result;
     }
 
     private static bool AreAllFreeCellsConnected(Board board)
@@ -235,31 +259,20 @@ public class HamiltonianPathSolver(
 
         return count;
     }
-    
+
     private void Backtrack(Board board, Stack<PathState> stack)
     {
         if (stack.TryPop(out var cur))
         {
             board.Unmark(cur.Point);
-            if (!_backJumpMode) return;
+            if (!_backJumpMode)
+                return;
         }
 
         while (stack.TryPeek(out var state) && state.AvailableDirectionsCount == 0)
         {
             cur = stack.Pop();
             board.Unmark(cur.Point);
-        }
-    }
-
-    private static void BuildSolutionPath(Board board, Stack<PathState> stack)
-    {
-        var pathLength = stack.Count;
-
-        while (stack.Count != 0)
-        {
-            var cur = stack.Pop();
-            board.Mark(cur.Point, pathLength);
-            --pathLength;
         }
     }
 }
