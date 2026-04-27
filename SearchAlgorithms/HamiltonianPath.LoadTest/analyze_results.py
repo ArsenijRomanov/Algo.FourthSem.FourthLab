@@ -137,66 +137,50 @@ def plot_distribution_charts(df, out_dir: Path) -> None:
     ]
 
     for metric, title, ylabel, filename_prefix in metrics:
-        fig, axes = plt.subplots(
-            len(algorithms),
-            1,
-            figsize=(max(10, len(size_order) * 1.3), 4 * len(algorithms)),
-            sharex=True,
-        )
-        if len(algorithms) == 1:
-            axes = [axes]
+        for size in size_order:
+            part = df[df["size_label"] == size]
+            values_by_algorithm = [
+                part.loc[part["Algorithm"] == algorithm, metric].dropna().tolist()
+                for algorithm in algorithms
+            ]
 
-        for ax, algorithm in zip(axes, algorithms):
-            part = df[df["Algorithm"] == algorithm]
-            values_by_size = []
+            if all(len(values) == 0 for values in values_by_algorithm):
+                continue
 
-            for size in size_order:
-                values = part.loc[part["size_label"] == size, metric].dropna().tolist()
-                values_by_size.append(values)
-
-            ax.boxplot(values_by_size, labels=size_order, showfliers=False)
-            ax.set_title(f"{algorithm}")
+            fig, ax = plt.subplots(figsize=(max(10, len(algorithms) * 1.8), 6))
+            ax.boxplot(values_by_algorithm, labels=algorithms, showfliers=False)
+            ax.set_title(f"{title} ({size})")
+            ax.set_xlabel("Algorithm")
             ax.set_ylabel(ylabel)
             ax.grid(True, alpha=0.25, axis="y")
+            plt.setp(ax.get_xticklabels(), rotation=20, ha="right")
 
-        axes[-1].set_xlabel("Board size")
-        fig.suptitle(title)
-        fig.tight_layout(rect=[0, 0.02, 1, 0.96])
-        boxplot_path = out_dir / f"{filename_prefix}_boxplot_by_size.png"
-        fig.savefig(boxplot_path, dpi=150)
-        plt.close(fig)
+            fig.tight_layout()
+            boxplot_path = out_dir / f"{filename_prefix}_boxplot_{size}.png"
+            fig.savefig(boxplot_path, dpi=150)
+            plt.close(fig)
 
-        fig, axes = plt.subplots(
-            len(algorithms),
-            1,
-            figsize=(max(10, len(size_order) * 1.3), 4 * len(algorithms)),
-            sharex=True,
-        )
-        if len(algorithms) == 1:
-            axes = [axes]
-
-        for ax, algorithm in zip(axes, algorithms):
-            part = df[df["Algorithm"] == algorithm]
-            for x_pos, size in enumerate(size_order, start=1):
-                y_values = part.loc[part["size_label"] == size, metric].dropna()
+            fig, ax = plt.subplots(figsize=(max(10, len(algorithms) * 1.8), 6))
+            for x_pos, algorithm in enumerate(algorithms, start=1):
+                y_values = part.loc[part["Algorithm"] == algorithm, metric].dropna()
                 x_values = [x_pos] * len(y_values)
                 ax.scatter(x_values, y_values, alpha=0.6, s=20)
 
-            ax.set_title(f"{algorithm}")
+            ax.set_title(f"{title} (scatter, {size})")
+            ax.set_xlabel("Algorithm")
             ax.set_ylabel(ylabel)
             ax.grid(True, alpha=0.25, axis="y")
-            ax.set_xlim(0.5, len(size_order) + 0.5)
-            ax.set_xticks(range(1, len(size_order) + 1), size_order)
+            ax.set_xlim(0.5, len(algorithms) + 0.5)
+            ax.set_xticks(range(1, len(algorithms) + 1), algorithms)
+            plt.setp(ax.get_xticklabels(), rotation=20, ha="right")
 
-        axes[-1].set_xlabel("Board size")
-        fig.suptitle(f"{title} (scatter columns)")
-        fig.tight_layout(rect=[0, 0.02, 1, 0.96])
-        scatter_path = out_dir / f"{filename_prefix}_scatter_by_size.png"
-        fig.savefig(scatter_path, dpi=150)
-        plt.close(fig)
+            fig.tight_layout()
+            scatter_path = out_dir / f"{filename_prefix}_scatter_{size}.png"
+            fig.savefig(scatter_path, dpi=150)
+            plt.close(fig)
 
-        print(f"Saved graph: {boxplot_path}")
-        print(f"Saved graph: {scatter_path}")
+            print(f"Saved graph: {boxplot_path}")
+            print(f"Saved graph: {scatter_path}")
 
 
 def main() -> None:
