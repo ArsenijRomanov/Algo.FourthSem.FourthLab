@@ -78,6 +78,7 @@
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Elapsed.TotalMilliseconds, StringFormat='{}Время: {0:0.##} ms'}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding ManagedMemoryDeltaBytes, Converter={x:Static local:ByteSizeConverter.Instance}, StringFormat='{}Память: {0}'}" /></Border>
                         <Border Classes="metric-badge"><TextBlock Text="{Binding Steps, StringFormat='{}Шагов: {0}'}" /></Border>
+                        <Border Classes="metric-badge"><TextBlock Text="{Binding SolutionCount, StringFormat='{}Путей: {0}'}" /></Border>
                       </WrapPanel>
                       <TextBlock Classes="caption" TextWrapping="Wrap" Text="{Binding Note}" />
                     </StackPanel>

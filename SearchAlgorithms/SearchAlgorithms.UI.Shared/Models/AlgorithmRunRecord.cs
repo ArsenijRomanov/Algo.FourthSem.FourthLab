@@ -13,6 +13,7 @@ public sealed class AlgorithmRunRecord : ObservableObject
     public required long ManagedMemoryDeltaBytes { get; init; }
     public required long WorkingSetDeltaBytes { get; init; }
     public required int Steps { get; init; }
+    public long SolutionCount { get; init; }
     public string? Note { get; init; }
     public DateTimeOffset ExecutedAt { get; init; } = DateTimeOffset.Now;
 

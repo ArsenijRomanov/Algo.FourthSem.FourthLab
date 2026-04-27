@@ -363,6 +363,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
+                SolutionCount = 0,
                 Note = "Перед запуском нужно указать старт и финиш."
             };
         }
@@ -399,6 +400,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
+                SolutionCount = 0,
                 Note = "При текущем старте, финише и стенах гамильтонов путь невозможен."
             }, null);
         }
@@ -417,26 +419,31 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         var managedBefore = GC.GetTotalMemory(true);
         var stopwatch = Stopwatch.StartNew();
         var solver = new HamiltonianPathSolver(chooseDirection, commitValidator, backjumping);
-        var isSolved = solver.Solve(board, cancellationToken);
+        var solveResult = solver.Solve(board, cancellationToken);
         stopwatch.Stop();
         var managedAfter = GC.GetTotalMemory(true);
         var managedDelta = Math.Max(0, managedAfter - managedBefore);
 
-        var solvedMatrix = isSolved ? ExtractPathMatrix(board, matrix.GetLength(0), matrix.GetLength(1)) : null;
-        var solvedSteps = isSolved && solvedMatrix is not null
+        var hasFirstSolution = solveResult.HasSolution && solveResult.FirstSolution is not null;
+        if (hasFirstSolution)
+            HamiltonianPathSolver.ApplyPathToBoard(board, solveResult.FirstSolution!);
+
+        var solvedMatrix = hasFirstSolution ? ExtractPathMatrix(board, matrix.GetLength(0), matrix.GetLength(1)) : null;
+        var solvedSteps = hasFirstSolution && solvedMatrix is not null
             ? CountSolvedSteps(solvedMatrix)
             : 0;
 
         return new SolveComputation(new AlgorithmRunRecord
         {
             Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
-            IsSuccess = isSolved,
-            StatusText = isSolved ? "Решено" : "Гамильтонова пути не существует",
+            IsSuccess = solveResult.HasSolution,
+            StatusText = solveResult.HasSolution ? "Решено" : "Гамильтонова пути не существует",
             Elapsed = stopwatch.Elapsed,
             ManagedMemoryDeltaBytes = managedDelta,
             WorkingSetDeltaBytes = 0,
             Steps = solvedSteps,
-            Note = ""
+            SolutionCount = solveResult.SolutionCount,
+            Note = $"Найдено путей: {solveResult.SolutionCount}."
         }, solvedMatrix);
     }
 
@@ -569,6 +576,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         ManagedMemoryDeltaBytes = 0,
         WorkingSetDeltaBytes = 0,
         Steps = 0,
+        SolutionCount = 0,
         Note = $"Исключение: {ex.GetType().Name}. {ex.Message}"
     };
 
