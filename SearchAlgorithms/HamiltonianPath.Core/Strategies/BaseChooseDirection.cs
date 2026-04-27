@@ -7,15 +7,24 @@ namespace HamiltonianPath.Core.Strategies;
 
 public class BaseChooseDirection : IChooseDirection
 {
-    public (PathState nextState, DirectionFlag chosenDir) GetNextPathState(Board board, PathState pathState)
+    public bool TryGetNextPathState(
+        Board board,
+        PathState pathState,
+        out PathState nextState,
+        out DirectionFlag chosenDir)
     {
         foreach (var dir in StepHelper.All)
         {
-            if (!pathState.CanMove(dir) || !board.TryStep(pathState.Point, dir, out var nextPoint)) continue;
-            var nextPathState = new PathState(nextPoint, board.CalculateDirsMask(nextPoint));
-            return (nextPathState, dir);
+            if (!pathState.CanMove(dir) || !board.TryStep(pathState.Point, dir, out var nextPoint))
+                continue;
+
+            nextState = new PathState(nextPoint, board.CalculateDirsMask(nextPoint));
+            chosenDir = dir;
+            return true;
         }
 
-        throw new ArgumentException(null, nameof(pathState));
+        nextState = default;
+        chosenDir = DirectionFlag.None;
+        return false;
     }
 }

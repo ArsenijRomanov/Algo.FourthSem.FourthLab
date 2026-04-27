@@ -1,0 +1,69 @@
+{
+  "seed": 1,
+  "algorithms": [
+    "bfs",
+    "astar",
+    "idastar",
+    "idabackjump"
+  ],
+  "suites": [
+    {
+      "name": "4x4-depth-10",
+      "width": 4,
+      "height": 4,
+      "depth": 10,
+      "casesFile": "Data/depth-10.json",
+      "runs": 5
+    },
+    {
+      "name": "4x4-depth-20",
+      "width": 4,
+      "height": 4,
+      "depth": 20,
+      "casesFile": "Data/depth-20.json",
+      "runs": 5
+    },
+    {
+      "name": "4x4-depth-30",
+      "width": 4,
+      "height": 4,
+      "depth": 30,
+      "casesFile": "Data/depth-30.json",
+      "runs": 5
+    },
+    {
+      "name": "4x4-depth-40",
+      "width": 4,
+      "height": 4,
+      "depth": 40,
+      "casesFile": "Data/depth-40.json",
+      "runs": 3
+    },
+    {
+      "name": "4x4-depth-50",
+      "width": 4,
+      "height": 4,
+      "depth": 50,
+      "casesFile": "Data/depth-50.json",
+      "runs": 2
+    }
+  ],
+  "execution": {
+    "warmupRuns": 1,
+    "timeoutMs": 600000,
+    "stopOnTimeout": {
+      "enabled": true,
+      "scope": "algorithm",
+      "skipCurrentSuiteRemainingCases": true,
+      "skipAllNextSuitesWithLargerSize": true,
+      "skipAllNextSuitesWithSameSizeAndGreaterDepth": true
+    }
+  },
+  "measurements": {
+    "measureMemory": true,
+    "forceFullGcBeforeRun": true
+  },
+  "output": {
+    "rawResultsFile": "artifacts/slidingpuzzle-loadtest-results.jsonl"
+  }
+}

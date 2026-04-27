@@ -5,5 +5,9 @@ namespace HamiltonianPath.Core.Abstractions;
 
 public interface IChooseDirection
 {
-    (PathState nextState, DirectionFlag chosenDir) GetNextPathState(Board matrix, PathState pathState);
+    bool TryGetNextPathState(
+        Board board,
+        PathState pathState,
+        out PathState nextState,
+        out DirectionFlag chosenDir);
 }

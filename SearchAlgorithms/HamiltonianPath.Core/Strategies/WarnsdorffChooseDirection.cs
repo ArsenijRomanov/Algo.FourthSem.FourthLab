@@ -7,10 +7,14 @@ namespace HamiltonianPath.Core.Strategies;
 
 public class WarnsdorffChooseDirection : IChooseDirection
 {
-    public (PathState nextState, DirectionFlag chosenDir) GetNextPathState(Board board, PathState pathState)
+    public bool TryGetNextPathState(
+        Board board,
+        PathState pathState,
+        out PathState nextState,
+        out DirectionFlag chosenDir)
     {
         var best = default(PathState);
-        var bestDir = default(DirectionFlag);
+        var bestDir = DirectionFlag.None;
         var bestFreedom = byte.MaxValue;
         var hasBest = false;
 
@@ -19,20 +23,20 @@ public class WarnsdorffChooseDirection : IChooseDirection
             if (!pathState.CanMove(dir) || !board.TryStep(pathState.Point, dir, out var nextPoint))
                 continue;
 
-            var nextPathState = new PathState(nextPoint, board.CalculateDirsMask(nextPoint));
-            var freedom = nextPathState.AvailableDirectionsCount;
+            var candidate = new PathState(nextPoint, board.CalculateDirsMask(nextPoint));
+            var freedom = candidate.AvailableDirectionsCount;
 
             if (freedom >= bestFreedom)
                 continue;
 
-            best = nextPathState;
-            bestFreedom = freedom;
+            best = candidate;
             bestDir = dir;
+            bestFreedom = freedom;
             hasBest = true;
         }
 
-        return !hasBest 
-            ? throw new ArgumentException(null, nameof(pathState)) 
-            : (best, bestDir);
+        nextState = best;
+        chosenDir = bestDir;
+        return hasBest;
     }
 }
