@@ -246,15 +246,28 @@ static SingleRunMeasurement RunSingle(
     var solver = solverFactory();
 
     long before = 0;
-    if (measureMemory && forceFullGcBeforeRun)
+    if (measureMemory)
     {
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-        before = GC.GetTotalMemory(true);
+        if (forceFullGcBeforeRun)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        before = GC.GetTotalAllocatedBytes(true);
     }
 
     var sw = Stopwatch.StartNew();
+
+    long MeasureAllocatedDelta()
+    {
+        if (!measureMemory)
+            return 0;
+
+        var after = GC.GetTotalAllocatedBytes(true);
+        return Math.Max(0, after - before);
+    }
 
     try
     {
@@ -262,24 +275,21 @@ static SingleRunMeasurement RunSingle(
         var solveResult = solver.Solve(board, cts.Token);
         sw.Stop();
 
-        var memoryDelta = 0L;
-        if (measureMemory)
-        {
-            var after = GC.GetTotalMemory(true);
-            memoryDelta = Math.Max(0, after - before);
-        }
+        var memoryDelta = MeasureAllocatedDelta();
 
         return new SingleRunMeasurement(RunStatus.Ok, solveResult.IsSolved, solveResult.MoveCount, sw.Elapsed.TotalMilliseconds, memoryDelta, null);
     }
     catch (OperationCanceledException)
     {
         sw.Stop();
-        return new SingleRunMeasurement(RunStatus.Timeout, false, null, sw.Elapsed.TotalMilliseconds, 0, null);
+        var memoryDelta = MeasureAllocatedDelta();
+        return new SingleRunMeasurement(RunStatus.Timeout, false, null, sw.Elapsed.TotalMilliseconds, memoryDelta, null);
     }
     catch (Exception ex)
     {
         sw.Stop();
-        return new SingleRunMeasurement(RunStatus.Error, false, null, sw.Elapsed.TotalMilliseconds, 0, ex.GetType().Name + ": " + ex.Message);
+        var memoryDelta = MeasureAllocatedDelta();
+        return new SingleRunMeasurement(RunStatus.Error, false, null, sw.Elapsed.TotalMilliseconds, memoryDelta, ex.GetType().Name + ": " + ex.Message);
     }
 }
 
@@ -321,7 +331,7 @@ static void PrintRunResult(
     var prefix = $"      [{suite.Width}x{suite.Height} depth={suite.Depth}] case={caseItem.CaseId} alg={algorithm} run={runIndex}/{totalRuns}";
     var details = $"time={result.ElapsedMs:F3} ms";
     var moves = result.MoveCount.HasValue ? $", moves={result.MoveCount.Value}" : "";
-    var mem = $", memDelta={result.MemoryDeltaBytes} B";
+    var mem = $", allocated={result.MemoryDeltaBytes} B";
 
     switch (result.Status)
     {
@@ -330,11 +340,11 @@ static void PrintRunResult(
             break;
 
         case RunStatus.Timeout:
-            ConsoleUi.WriteLine($"{prefix} -> TIMEOUT ({details})", ConsoleColor.Magenta);
+            ConsoleUi.WriteLine($"{prefix} -> TIMEOUT ({details}{mem})", ConsoleColor.Magenta);
             break;
 
         case RunStatus.Error:
-            ConsoleUi.WriteLine($"{prefix} -> ERROR ({result.Error ?? "unknown error"})", ConsoleColor.Red);
+            ConsoleUi.WriteLine($"{prefix} -> ERROR ({result.Error ?? "unknown error"}, {details}{mem})", ConsoleColor.Red);
             break;
 
         case RunStatus.Skipped:
