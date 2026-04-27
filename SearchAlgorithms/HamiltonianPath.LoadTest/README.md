@@ -19,6 +19,6 @@ The runner writes JSONL rows with fields:
 - `Width`, `Height`, `CaseId`, `StartX`, `StartY`, `FinishX`, `FinishY`
 - `Algorithm`, `RunIndex`
 - `Status` (`Ok`, `Timeout`, `Error`)
-- `Solved`, `ElapsedMs`, `MemoryDeltaBytes`, `Error`
+- `Solved`, `ElapsedMs`, `MemoryDeltaBytes`, `SolutionCount`, `Error`
 
 If `stopOnTimeout=true`, the runner disables only the timed-out algorithm for all remaining cases/sizes and continues benchmarking other algorithms.

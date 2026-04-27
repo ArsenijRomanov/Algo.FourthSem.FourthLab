@@ -45,6 +45,8 @@ def build_summary(df):
         p95_time_ms=("ElapsedMs", lambda s: s.quantile(0.95)),
         mean_mem_bytes=("MemoryDeltaBytes", "mean"),
         median_mem_bytes=("MemoryDeltaBytes", "median"),
+        mean_solution_count=("SolutionCount", "mean"),
+        median_solution_count=("SolutionCount", "median"),
     )
 
     summary["ok_rate"] = summary["ok_runs"] / summary["runs"]

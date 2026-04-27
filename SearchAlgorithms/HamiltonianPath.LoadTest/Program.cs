@@ -101,6 +101,7 @@ foreach (var size in config.Sizes)
                     result.Solved,
                     result.ElapsedMs,
                     result.MemoryDeltaBytes,
+                    result.SolutionCount,
                     result.Error
                 );
 
@@ -190,7 +191,7 @@ static List<GeneratedCase> GenerateFeasibleCases(SizeConfig size, LoadTestConfig
             var feasible = false;
             try
             {
-                feasible = solver.Solve(new Board(size.Height, size.Width, start, finish), cts.Token);
+                feasible = solver.Solve(new Board(size.Height, size.Width, start, finish), cts.Token).HasSolution;
             }
             catch (OperationCanceledException)
             {
@@ -234,7 +235,8 @@ static SingleRunMeasurement RunSingle(
     try
     {
         using var cts = new CancellationTokenSource(timeoutMs);
-        var solved = solver.Solve(board, cts.Token);
+        var solveResult = solver.Solve(board, cts.Token);
+        var solved = solveResult.HasSolution;
         sw.Stop();
 
         var memoryDelta = 0L;
@@ -244,17 +246,17 @@ static SingleRunMeasurement RunSingle(
             memoryDelta = Math.Max(0, after - before);
         }
 
-        return new SingleRunMeasurement(RunStatus.Ok, solved, sw.Elapsed.TotalMilliseconds, memoryDelta, null);
+        return new SingleRunMeasurement(RunStatus.Ok, solved, sw.Elapsed.TotalMilliseconds, memoryDelta, solveResult.SolutionCount, null);
     }
     catch (OperationCanceledException)
     {
         sw.Stop();
-        return new SingleRunMeasurement(RunStatus.Timeout, false, sw.Elapsed.TotalMilliseconds, 0, null);
+        return new SingleRunMeasurement(RunStatus.Timeout, false, sw.Elapsed.TotalMilliseconds, 0, 0, null);
     }
     catch (Exception ex)
     {
         sw.Stop();
-        return new SingleRunMeasurement(RunStatus.Error, false, sw.Elapsed.TotalMilliseconds, 0, ex.GetType().Name + ": " + ex.Message);
+        return new SingleRunMeasurement(RunStatus.Error, false, sw.Elapsed.TotalMilliseconds, 0, 0, ex.GetType().Name + ": " + ex.Message);
     }
 }
 
@@ -269,12 +271,13 @@ static void PrintRunResult(
     var prefix = $"      [{size.Width}x{size.Height}] case={generatedCase.CaseId} alg={algorithm} run={runIndex}/{totalRuns}";
     var details = $"time={result.ElapsedMs:F3} ms";
     var mem = $", memDelta={result.MemoryDeltaBytes} B";
+    var paths = $", paths={result.SolutionCount}";
 
     switch (result.Status)
     {
         case RunStatus.Ok:
             ConsoleUi.WriteLine(
-                $"{prefix} -> OK ({(result.Solved ? "solved" : "not solved")}, {details}{mem})",
+                $"{prefix} -> OK ({(result.Solved ? "solved" : "not solved")}, {details}{mem}{paths})",
                 ConsoleColor.Green);
             break;
 
@@ -313,6 +316,7 @@ internal sealed record SingleRunMeasurement(
     bool Solved,
     double ElapsedMs,
     long MemoryDeltaBytes,
+    long SolutionCount,
     string? Error);
 
 internal sealed record BenchmarkResultRow(
@@ -331,6 +335,7 @@ internal sealed record BenchmarkResultRow(
     bool Solved,
     double ElapsedMs,
     long MemoryDeltaBytes,
+    long SolutionCount,
     string? Error);
 
 internal sealed class LoadTestConfig
