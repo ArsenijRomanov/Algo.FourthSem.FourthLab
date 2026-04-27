@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import re
 from pathlib import Path
 
 
@@ -28,6 +29,7 @@ def add_derived_columns(df):
     df = df.copy()
     df["size_label"] = df["Width"].astype(str) + "x" + df["Height"].astype(str)
     df["size_area"] = df["Width"] * df["Height"]
+    df["suite_depth_label"] = df["Suite"] + " (d=" + df["Depth"].astype(str) + ")"
     return df
 
 
@@ -71,72 +73,68 @@ def save_table(df, out_dir: Path) -> None:
     print(f"Saved summary Markdown: {md_path}")
 
 
-def plot_metrics(summary, out_dir: Path) -> None:
+def _sanitize_filename(value: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9_.-]+", "_", value).strip("_")
+
+
+def _is_ok_status(series):
+    return (series == "Ok") | (series == 0)
+
+
+def plot_time_boxplots_multiscale(df, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    summary = summary.copy()
-    summary["suite_depth_label"] = summary["Suite"] + " (d=" + summary["Depth"].astype(str) + ")"
-
-    size_order = (
-        summary[["size_area", "Depth", "suite_depth_label"]]
+    order_df = (
+        df[["size_area", "Depth", "suite_depth_label"]]
         .drop_duplicates()
         .sort_values(["size_area", "Depth"])
     )
-    x_labels = size_order["suite_depth_label"].tolist()
+    suite_order = order_df["suite_depth_label"].tolist()
+    algorithms = sorted(df["Algorithm"].unique())
 
-    def reindex_for(part):
-        indexed = part.set_index("suite_depth_label")
-        return indexed.reindex(x_labels)
+    scales = [
+        ("linear", "linear"),
+        ("log", "log"),
+        ("symlog", "symlog"),
+    ]
 
-    plt.figure(figsize=(12, 6))
-    for algorithm, part in summary.groupby("Algorithm"):
-        series = reindex_for(part)
-        plt.plot(x_labels, series["median_time_ms"], marker="o", label=algorithm)
-    plt.title("Median runtime by suite")
-    plt.xlabel("Suite")
-    plt.ylabel("Median runtime (ms)")
-    plt.xticks(rotation=35, ha="right")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    time_path = out_dir / "median_time_ms.png"
-    plt.tight_layout()
-    plt.savefig(time_path, dpi=150)
-    plt.close()
+    for suite_label in suite_order:
+        part = df[df["suite_depth_label"] == suite_label]
 
-    plt.figure(figsize=(12, 6))
-    for algorithm, part in summary.groupby("Algorithm"):
-        series = reindex_for(part)
-        plt.plot(x_labels, series["timeout_rate"], marker="o", label=algorithm)
-    plt.title("Timeout rate by suite")
-    plt.xlabel("Suite")
-    plt.ylabel("Timeout rate")
-    plt.ylim(0, 1)
-    plt.xticks(rotation=35, ha="right")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    timeout_path = out_dir / "timeout_rate.png"
-    plt.tight_layout()
-    plt.savefig(timeout_path, dpi=150)
-    plt.close()
+        values_by_algorithm = [
+            part.loc[
+                (part["Algorithm"] == algorithm)
+                & _is_ok_status(part["Status"])
+                & (part["ElapsedMs"] > 0),
+                "ElapsedMs",
+            ].dropna().tolist()
+            for algorithm in algorithms
+        ]
 
-    plt.figure(figsize=(12, 6))
-    for algorithm, part in summary.groupby("Algorithm"):
-        series = reindex_for(part)
-        plt.plot(x_labels, series["median_mem_bytes"], marker="o", label=algorithm)
-    plt.title("Median memory delta by suite")
-    plt.xlabel("Suite")
-    plt.ylabel("Median memory delta (bytes)")
-    plt.xticks(rotation=35, ha="right")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-    mem_path = out_dir / "median_memory_bytes.png"
-    plt.tight_layout()
-    plt.savefig(mem_path, dpi=150)
-    plt.close()
+        if all(len(values) == 0 for values in values_by_algorithm):
+            continue
 
-    print(f"Saved graph: {time_path}")
-    print(f"Saved graph: {timeout_path}")
-    print(f"Saved graph: {mem_path}")
+        fig, axes = plt.subplots(1, len(scales), figsize=(6 * len(scales), 6), sharex=True)
+        if len(scales) == 1:
+            axes = [axes]
+
+        for ax, (scale_name, y_scale) in zip(axes, scales):
+            ax.boxplot(values_by_algorithm, labels=algorithms, showfliers=False)
+            ax.set_title(f"{suite_label} [{scale_name}]")
+            ax.set_xlabel("Algorithm")
+            ax.set_ylabel("Runtime (ms)")
+            ax.set_yscale(y_scale)
+            ax.grid(True, alpha=0.25, axis="y")
+            plt.setp(ax.get_xticklabels(), rotation=20, ha="right")
+
+        fig.suptitle("Runtime distribution by algorithm", fontsize=14)
+        fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+        boxplot_path = out_dir / f"time_boxplot_multiscale_{_sanitize_filename(suite_label)}.png"
+        fig.savefig(boxplot_path, dpi=150)
+        plt.close(fig)
+
+        print(f"Saved graph: {boxplot_path}")
 
 
 def main() -> None:
@@ -155,7 +153,7 @@ def main() -> None:
     df = add_derived_columns(df)
     summary = build_summary(df)
     save_table(summary, args.out_dir)
-    plot_metrics(summary, args.out_dir)
+    plot_time_boxplots_multiscale(df, args.out_dir)
 
 
 if __name__ == "__main__":
