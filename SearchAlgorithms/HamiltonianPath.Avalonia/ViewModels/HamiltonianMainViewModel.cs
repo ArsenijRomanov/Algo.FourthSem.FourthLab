@@ -363,6 +363,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
+                PathsFound = 0,
                 Note = "Перед запуском нужно указать старт и финиш."
             };
         }
@@ -399,6 +400,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
                 ManagedMemoryDeltaBytes = 0,
                 WorkingSetDeltaBytes = 0,
                 Steps = 0,
+                PathsFound = 0,
                 Note = "При текущем старте, финише и стенах гамильтонов путь невозможен."
             }, null);
         }
@@ -417,27 +419,45 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         var managedBefore = GC.GetTotalMemory(true);
         var stopwatch = Stopwatch.StartNew();
         var solver = new HamiltonianPathSolver(chooseDirection, commitValidator, backjumping);
-        var isSolved = solver.Solve(board, cancellationToken);
+        var solveResult = ExecuteSolve(solver, board, cancellationToken);
         stopwatch.Stop();
         var managedAfter = GC.GetTotalMemory(true);
         var managedDelta = Math.Max(0, managedAfter - managedBefore);
 
-        var solvedMatrix = isSolved ? ExtractPathMatrix(board, matrix.GetLength(0), matrix.GetLength(1)) : null;
-        var solvedSteps = isSolved && solvedMatrix is not null
+        var solvedMatrix = solveResult.IsSolved ? ExtractPathMatrix(board, matrix.GetLength(0), matrix.GetLength(1)) : null;
+        var solvedSteps = solveResult.IsSolved && solvedMatrix is not null
             ? CountSolvedSteps(solvedMatrix)
             : 0;
 
         return new SolveComputation(new AlgorithmRunRecord
         {
             Title = BuildAlgorithmTitle(warnsdorff, connectivity, backjumping),
-            IsSuccess = isSolved,
-            StatusText = isSolved ? "Решено" : "Гамильтонова пути не существует",
+            IsSuccess = solveResult.IsSolved,
+            StatusText = solveResult.IsSolved ? "Решено" : "Гамильтонова пути не существует",
             Elapsed = stopwatch.Elapsed,
             ManagedMemoryDeltaBytes = managedDelta,
             WorkingSetDeltaBytes = 0,
             Steps = solvedSteps,
-            Note = ""
+            PathsFound = solveResult.PathsFound,
+            Note = solveResult.IsSolved ? $"Найдено путей: {solveResult.PathsFound}." : ""
         }, solvedMatrix);
+    }
+
+    private static SolveExecutionResult ExecuteSolve(HamiltonianPathSolver solver, Board board, CancellationToken cancellationToken)
+    {
+        var solveMethod = typeof(HamiltonianPathSolver).GetMethod(nameof(HamiltonianPathSolver.Solve), [typeof(Board), typeof(CancellationToken)])
+            ?? throw new MissingMethodException(typeof(HamiltonianPathSolver).FullName, nameof(HamiltonianPathSolver.Solve));
+
+        var rawResult = solveMethod.Invoke(solver, [board, cancellationToken]);
+        return rawResult switch
+        {
+            bool solved => new SolveExecutionResult(solved, solved ? 1 : 0),
+            byte count => new SolveExecutionResult(count > 0, count),
+            short count => new SolveExecutionResult(count > 0, count),
+            int count => new SolveExecutionResult(count > 0, count),
+            long count => new SolveExecutionResult(count > 0, count > int.MaxValue ? int.MaxValue : (int)count),
+            _ => throw new InvalidOperationException("Неподдерживаемый контракт метода Solve в ядре HamiltonianPath.Core.")
+        };
     }
 
     private static int[,] ExtractPathMatrix(Board board, int height, int width)
@@ -477,6 +497,8 @@ public sealed class HamiltonianMainViewModel : ObservableObject
 
         RefreshPathLinks();
     }
+
+    private sealed record SolveExecutionResult(bool IsSolved, int PathsFound);
 
     private sealed record SolveComputation(AlgorithmRunRecord Record, int[,]? SolvedMatrix);
 
@@ -569,6 +591,7 @@ public sealed class HamiltonianMainViewModel : ObservableObject
         ManagedMemoryDeltaBytes = 0,
         WorkingSetDeltaBytes = 0,
         Steps = 0,
+        PathsFound = 0,
         Note = $"Исключение: {ex.GetType().Name}. {ex.Message}"
     };
 
