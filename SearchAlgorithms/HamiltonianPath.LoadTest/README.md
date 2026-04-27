@@ -21,4 +21,6 @@ The runner writes JSONL rows with fields:
 - `Status` (`Ok`, `Timeout`, `Error`)
 - `Solved`, `ElapsedMs`, `MemoryDeltaBytes`, `SolutionCount`, `Error`
 
+`MemoryDeltaBytes` in these results represents per-thread allocated bytes delta for the measured run.
+
 If `stopOnTimeout=true`, the runner disables only the timed-out algorithm for all remaining cases/sizes and continues benchmarking other algorithms.

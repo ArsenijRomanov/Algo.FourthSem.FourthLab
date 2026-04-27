@@ -223,12 +223,7 @@ static SingleRunMeasurement RunSingle(
 
     long before = 0;
     if (measureMemory)
-    {
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-        before = GC.GetTotalMemory(true);
-    }
+        before = GC.GetAllocatedBytesForCurrentThread();
 
     var sw = Stopwatch.StartNew();
 
@@ -242,7 +237,7 @@ static SingleRunMeasurement RunSingle(
         var memoryDelta = 0L;
         if (measureMemory)
         {
-            var after = GC.GetTotalMemory(true);
+            var after = GC.GetAllocatedBytesForCurrentThread();
             memoryDelta = Math.Max(0, after - before);
         }
 
