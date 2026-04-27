@@ -413,15 +413,12 @@ public sealed class HamiltonianMainViewModel : ObservableObject
             ? new ConnectivityCommitValidator()
             : new BaseCommitValidator();
 
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-        var managedBefore = GC.GetTotalMemory(true);
+        var managedBefore = GC.GetAllocatedBytesForCurrentThread();
         var stopwatch = Stopwatch.StartNew();
         var solver = new HamiltonianPathSolver(chooseDirection, commitValidator, backjumping);
         var solveResult = solver.Solve(board, cancellationToken);
         stopwatch.Stop();
-        var managedAfter = GC.GetTotalMemory(true);
+        var managedAfter = GC.GetAllocatedBytesForCurrentThread();
         var managedDelta = Math.Max(0, managedAfter - managedBefore);
 
         var hasFirstSolution = solveResult.HasSolution && solveResult.FirstSolution is not null;
