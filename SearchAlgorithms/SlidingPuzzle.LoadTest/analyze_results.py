@@ -81,7 +81,15 @@ def _is_ok_status(series):
     return (series == "Ok") | (series == 0)
 
 
-def plot_time_boxplots_multiscale(df, out_dir: Path) -> None:
+def plot_metric_boxplots_multiscale(
+    df,
+    out_dir: Path,
+    *,
+    metric: str,
+    ylabel: str,
+    title: str,
+    filename_prefix: str,
+) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     order_df = (
@@ -105,8 +113,8 @@ def plot_time_boxplots_multiscale(df, out_dir: Path) -> None:
             part.loc[
                 (part["Algorithm"] == algorithm)
                 & _is_ok_status(part["Status"])
-                & (part["ElapsedMs"] > 0),
-                "ElapsedMs",
+                & (part[metric] > 0),
+                metric,
             ].dropna().tolist()
             for algorithm in algorithms
         ]
@@ -122,15 +130,15 @@ def plot_time_boxplots_multiscale(df, out_dir: Path) -> None:
             ax.boxplot(values_by_algorithm, labels=algorithms, showfliers=False)
             ax.set_title(f"{suite_label} [{scale_name}]")
             ax.set_xlabel("Algorithm")
-            ax.set_ylabel("Runtime (ms)")
+            ax.set_ylabel(ylabel)
             ax.set_yscale(y_scale)
             ax.grid(True, alpha=0.25, axis="y")
             plt.setp(ax.get_xticklabels(), rotation=20, ha="right")
 
-        fig.suptitle("Runtime distribution by algorithm", fontsize=14)
+        fig.suptitle(title, fontsize=14)
         fig.tight_layout(rect=[0, 0, 1, 0.95])
 
-        boxplot_path = out_dir / f"time_boxplot_multiscale_{_sanitize_filename(suite_label)}.png"
+        boxplot_path = out_dir / f"{filename_prefix}_boxplot_multiscale_{_sanitize_filename(suite_label)}.png"
         fig.savefig(boxplot_path, dpi=150)
         plt.close(fig)
 
@@ -153,7 +161,22 @@ def main() -> None:
     df = add_derived_columns(df)
     summary = build_summary(df)
     save_table(summary, args.out_dir)
-    plot_time_boxplots_multiscale(df, args.out_dir)
+    plot_metric_boxplots_multiscale(
+        df,
+        args.out_dir,
+        metric="ElapsedMs",
+        ylabel="Runtime (ms)",
+        title="Runtime distribution by algorithm",
+        filename_prefix="time",
+    )
+    plot_metric_boxplots_multiscale(
+        df,
+        args.out_dir,
+        metric="MemoryDeltaBytes",
+        ylabel="Allocated memory (bytes)",
+        title="Allocated memory distribution by algorithm",
+        filename_prefix="memory",
+    )
 
 
 if __name__ == "__main__":
